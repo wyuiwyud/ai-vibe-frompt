@@ -11,11 +11,12 @@ import FeaturesSection from '@/components/FeaturesSection';
 import HowItWorks from '@/components/HowItWorks';
 import Testimonials from '@/components/Testimonials';
 import Footer from '@/components/Footer';
+import { LandingBuilderWizard } from '@/features/landing-builder/LandingBuilderWizard';
 import { buildPrompt, type FormData, type Category } from '@/lib/promptTemplates';
 import { sleep } from '@/lib/utils';
 
 export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState<Category>('writing');
+  const [selectedCategory, setSelectedCategory] = useState<string>('writing');
   const [prompt, setPrompt] = useState<string>('');
   const [formData, setFormData] = useState<FormData | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
@@ -66,8 +67,17 @@ export default function Home() {
 
       {/* Main content */}
       <HeroSection />
-      <CategoryGrid selected={selectedCategory} onSelect={(id) => setSelectedCategory(id as Category)} />
-      <DynamicForm category={selectedCategory} onBuildPrompt={handleBuildPrompt} isBuilding={isBuilding} />
+      <CategoryGrid selected={selectedCategory} onSelect={(id) => setSelectedCategory(id)} />
+      <LandingBuilderWizard />
+      {(['writing', 'coding', 'image', 'data'] as Category[]).includes(
+        selectedCategory as Category
+      ) && (
+        <DynamicForm
+          category={selectedCategory as Category}
+          onBuildPrompt={handleBuildPrompt}
+          isBuilding={isBuilding}
+        />
+      )}
 
       {/* Building overlay */}
       <AnimatePresence>

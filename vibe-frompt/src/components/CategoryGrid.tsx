@@ -81,6 +81,7 @@ const CATEGORIES = [
     { id: 'coding', icon: '💻', title: 'Lập Trình', description: 'Code sạch, debug, tạo mới theo kiến trúc chuẩn', color: '#7b2fff' },
     { id: 'image', icon: '🎨', title: 'Tạo Hình Ảnh', description: 'Prompt Midjourney & SDXL chuyên nghiệp', color: '#ff00cc' },
     { id: 'data', icon: '📊', title: 'Xử Lý Dữ Liệu', description: 'Phân tích, làm sạch, trực quan hóa dataset', color: '#00ffaa' },
+    { id: 'landing-builder', icon: '💻✨', title: 'Landing Page Builder', description: 'Từ ý tưởng thô → landing page MVP trong 3 phút', color: '#00f5ff' },
 ];
 
 interface CategoryGridProps {
@@ -123,7 +124,11 @@ export default function CategoryGrid({ selected, onSelect }: CategoryGridProps) 
                                 active={selected === cat.id}
                                 onClick={() => {
                                     onSelect(cat.id);
-                                    document.getElementById('form-section')?.scrollIntoView({ behavior: 'smooth' });
+                                    if (cat.id === 'landing-builder') {
+                                        document.getElementById('landing-builder')?.scrollIntoView({ behavior: 'smooth' });
+                                    } else {
+                                        document.getElementById('form-section')?.scrollIntoView({ behavior: 'smooth' });
+                                    }
                                 }}
                             />
                         </motion.div>
