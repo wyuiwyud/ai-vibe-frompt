@@ -32,21 +32,28 @@ export default function HeroSection() {
     const { scrollYProgress } = useScroll({ target: heroRef });
     const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
-    // Generate particles only on client
+    // Generate particles only on client (callback-based setState to avoid sync warning)
     useEffect(() => {
-        const generated = Array.from({ length: 30 }, (_, i) => ({
-            id: i,
-            x: Math.random() * 100,
-            y: Math.random() * 100,
-            size: Math.random() * 3 + 1,
-            duration: Math.random() * 6 + 6,
-            delay: Math.random() * 4,
-            color: i % 3 === 0 ? '#00f5ff' : i % 3 === 1 ? '#ff00cc' : '#7b2fff',
-            dx: (Math.random() - 0.5) * 60,
-            dy: -(Math.random() * 60 + 20),
-        }));
-        setParticles(generated);
+        setParticles(prev => {
+            if (prev.length === 0) {
+                return Array.from({ length: 30 }, (_, i) => ({
+                    id: i,
+                    x: Math.random() * 100,
+                    y: Math.random() * 100,
+                    size: Math.random() * 3 + 1,
+                    duration: Math.random() * 6 + 6,
+                    delay: Math.random() * 4,
+                    color: i % 3 === 0 ? '#00f5ff' : i % 3 === 1 ? '#ff00cc' : '#7b2fff',
+                    dx: (Math.random() - 0.5) * 60,
+                    dy: -(Math.random() * 60 + 20),
+                }));
+            }
+            return prev;
+        });
+    }, []);
 
+    // Demo line interval with proper cleanup
+    useEffect(() => {
         const id = setInterval(() => {
             setDemoLine(prev => (prev + 1) % DEMO_LINES.length);
         }, 1800);
