@@ -8,12 +8,12 @@ import {
 } from '@/store/landingBuilderStore';
 import { VisualPlaceholder } from '../components/VisualPlaceholder';
 import { cn } from '@/lib/utils';
-import {
-    DragDropContext,
-    Droppable,
-    Draggable,
-    type DropResult,
-} from '@hello-pangea/dnd';
+// import {
+//     DragDropContext,
+//     Droppable,
+//     Draggable,
+//     type DropResult,
+// } from '@hello-pangea/dnd';
 import {
     GripVertical,
     Trash2,
@@ -95,13 +95,14 @@ export function OptimizationStep() {
         }
     };
 
-    const onDragEnd = (result: DropResult) => {
-        if (!result.destination) return;
-        const items = Array.from(layout.sections);
-        const [moved] = items.splice(result.source.index, 1);
-        items.splice(result.destination.index, 0, moved);
-        updateLayout({ sections: items });
-    };
+    // Drag-drop functionality removed - use simple reordering buttons if needed
+    // const onDragEnd = (result: DropResult) => {
+    //     if (!result.destination) return;
+    //     const items = Array.from(layout.sections);
+    //     const [moved] = items.splice(result.source.index, 1);
+    //     items.splice(result.destination.index, 0, moved);
+    //     updateLayout({ sections: items });
+    // };
 
     const removeSection = (id: string) => {
         updateLayout({ sections: layout.sections.filter((s) => s.id !== id) });
@@ -249,41 +250,21 @@ export function OptimizationStep() {
                                         <p className="py-6 text-center text-[11px] text-white/20">Chưa có section nào. Thêm section để bắt đầu.</p>
                                     )}
 
-                                    <DragDropContext onDragEnd={onDragEnd}>
-                                        <Droppable droppableId="sections">
-                                            {(provided) => (
-                                                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                                                    {layout.sections.map((section, index) => (
-                                                        <Draggable key={section.id} draggableId={section.id} index={index}>
-                                                            {(provided, snapshot) => (
-                                                                <div
-                                                                    ref={provided.innerRef}
-                                                                    {...provided.draggableProps}
-                                                                    className={cn(
-                                                                        'flex items-center gap-3 rounded-xl border p-3 transition',
-                                                                        snapshot.isDragging
-                                                                            ? 'border-cyan-400 bg-cyan-400/10 shadow-[0_0_15px_rgba(34,211,238,0.2)]'
-                                                                            : 'border-white/5 bg-white/5 hover:border-white/10'
-                                                                    )}
-                                                                >
-                                                                    <div {...provided.dragHandleProps} className="cursor-grab text-white/20 hover:text-white/40">
-                                                                        <GripVertical className="h-4 w-4" />
-                                                                    </div>
-                                                                    <p className="flex-1 text-xs font-medium text-white/80">
-                                                                        {SECTION_LABELS[section.type] ?? section.type}
-                                                                    </p>
-                                                                    <button onClick={() => removeSection(section.id)} className="text-white/20 hover:text-red-400 transition">
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </Draggable>
-                                                    ))}
-                                                    {provided.placeholder}
-                                                </div>
-                                            )}
-                                        </Droppable>
-                                    </DragDropContext>
+                                    <div className="space-y-2">
+                                        {layout.sections.map((section, index) => (
+                                            <div
+                                                key={section.id}
+                                                className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-3 hover:border-white/10 transition"
+                                            >
+                                                <p className="flex-1 text-xs font-medium text-white/80">
+                                                    {SECTION_LABELS[section.type] ?? section.type}
+                                                </p>
+                                                <button onClick={() => removeSection(section.id)} className="text-white/20 hover:text-red-400 transition">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </motion.div>
                             )}
 
