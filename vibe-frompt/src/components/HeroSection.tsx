@@ -15,6 +15,12 @@ interface Particle {
     dy: number;
 }
 
+// Seed-based pseudo-random number generator for consistent results
+function seededRandom(seed: number): number {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+}
+
 const DEMO_LINES = [
     { raw: '"Viết bài về kinh tế số Việt Nam"', out: '' },
     { raw: '', out: 'Bạn là chuyên gia viết nội dung...' },
@@ -25,19 +31,25 @@ const DEMO_LINES = [
 ];
 
 export default function HeroSection() {
-    const [particles] = useState<Particle[]>(() =>
-        Array.from({ length: 30 }, (_, i) => ({
-            id: i,
-            x: Math.random() * 100,
-            y: Math.random() * 100,
-            size: Math.random() * 3 + 1,
-            duration: Math.random() * 6 + 6,
-            delay: Math.random() * 4,
-            color: i % 3 === 0 ? '#00f5ff' : i % 3 === 1 ? '#ff00cc' : '#7b2fff',
-            dx: (Math.random() - 0.5) * 60,
-            dy: -(Math.random() * 60 + 20),
-        }))
-    );
+    const [particles, setParticles] = useState<Particle[]>([]);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setParticles(
+            Array.from({ length: 30 }, (_, i) => ({
+                id: i,
+                x: seededRandom(i * 1.5) * 100,
+                y: seededRandom(i * 2.7) * 100,
+                size: seededRandom(i * 3.3) * 3 + 1,
+                duration: seededRandom(i * 4.1) * 6 + 6,
+                delay: seededRandom(i * 5.9) * 4,
+                color: i % 3 === 0 ? '#00f5ff' : i % 3 === 1 ? '#ff00cc' : '#7b2fff',
+                dx: (seededRandom(i * 7.1) - 0.5) * 60,
+                dy: -(seededRandom(i * 8.3) * 60 + 20),
+            }))
+        );
+        setIsMounted(true);
+    }, []);
     const [demoLine, setDemoLine] = useState(0);
     const [isGlitch, setIsGlitch] = useState(false);
     const heroRef = useRef<HTMLElement>(null);
@@ -70,7 +82,7 @@ export default function HeroSection() {
                     <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(-50%, -50%) scale(${i})`, width: 400, height: 400, borderRadius: '50%', border: '1px solid rgba(0,245,255,0.06)', animation: `pulseRing ${3 + i}s ease-out ${i * 0.8}s infinite` }} />
                 ))}
                 {/* Floating particles */}
-                {particles.map(p => (
+                {isMounted && particles.map(p => (
                     <div key={p.id} className="particle" style={{
                         left: `${p.x}%`, top: `${p.y}%`,
                         width: p.size, height: p.size,

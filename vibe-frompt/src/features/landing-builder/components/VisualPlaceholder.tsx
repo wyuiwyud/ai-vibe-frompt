@@ -16,6 +16,12 @@ interface FloatingBlock {
   width: number;
 }
 
+// Seed-based pseudo-random number generator for consistent results
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
 export function VisualPlaceholder({
   primaryColor,
   layoutType,
@@ -29,15 +35,17 @@ export function VisualPlaceholder({
     { left: 40, top: 30, width: 32 },
     { left: 25, top: 55, width: 28 },
   ]);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Chỉ random sau khi component đã mount trên client
   useEffect(() => {
     const next: FloatingBlock[] = Array.from({ length: 3 }).map((_, i) => ({
-      left: 10 + i * 20 + Math.random() * 10,
-      top: 10 + i * 15 + Math.random() * 8,
-      width: 28 + Math.random() * 18,
+      left: 10 + i * 20 + seededRandom(i * 1.5) * 10,
+      top: 10 + i * 15 + seededRandom(i * 2.7) * 8,
+      width: 28 + seededRandom(i * 3.3) * 18,
     }));
     setBlocks(next);
+    setIsMounted(true);
   }, []);
 
   return (
@@ -52,7 +60,7 @@ export function VisualPlaceholder({
 
       {/* Decorative floating blocks – random hóa chỉ sau khi mount để tránh hydration mismatch */}
       <div className="pointer-events-none absolute inset-0 opacity-30">
-        {blocks.map((b, idx) => (
+        {isMounted && blocks.map((b, idx) => (
           <div
             key={idx}
             className="absolute h-1 rounded-full bg-cyan-400/70"

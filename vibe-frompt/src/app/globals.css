@@ -1,4 +1,6 @@
+@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 
 /* ===== DESIGN TOKENS ===== */
 :root {
@@ -16,13 +18,20 @@
   --c-white: #ffffff;
   --c-glass: rgba(255, 255, 255, 0.04);
   --c-glass-border: rgba(255, 255, 255, 0.08);
-  --c-glass-hover: rgba(255, 255, 255, 0.08);
-  --gradient-hero: linear-gradient(135deg, #000000 0%, #030010 30%, #0a0018 60%, #0f001f 100%);
-  --gradient-cyan: linear-gradient(135deg, var(--c-cyan), #0080ff);
-  --gradient-border: linear-gradient(135deg, var(--c-cyan), var(--c-magenta));
-  --shadow-cyan: 0 0 30px rgba(0, 245, 255, 0.3), 0 0 80px rgba(0, 245, 255, 0.1);
-  --shadow-magenta: 0 0 30px rgba(255, 0, 204, 0.3);
-  --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.6);
+  --c-glass-hover: rgba(255, 255, 255, 0.12);
+
+  /* Galaxy 4D Palette */
+  --nebula-purple: #7b2fff;
+  --nebula-pink: #ff00cc;
+  --deep-cosmos: #030010;
+  --stardust-cyan: #00f5ff;
+  --stellar-gold: #ffd700;
+
+  --gradient-galaxy: radial-gradient(circle at center, #0f001f 0%, #0a0018 40%, #030010 100%);
+  --gradient-neon: linear-gradient(135deg, var(--stardust-cyan), var(--nebula-purple), var(--nebula-pink));
+  --gradient-border-4d: linear-gradient(135deg, var(--stardust-cyan), var(--nebula-purple), var(--nebula-pink), var(--stellar-gold));
+
+  --shadow-4d: 0 0 40px rgba(123, 47, 255, 0.3), 0 0 100px rgba(0, 245, 255, 0.1);
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
@@ -232,6 +241,41 @@ h6 {
     transform: scale(2.5);
     opacity: 0;
   }
+}
+
+/* ===== ORBITAL ANIMATION ===== */
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(var(--orbit-radius, 100px)) rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg) translateX(var(--orbit-radius, 100px)) rotate(-360deg);
+  }
+}
+
+.orbital {
+  animation: orbit var(--orbit-speed, 20s) linear infinite;
+}
+
+@keyframes nebulaDrift {
+  0% {
+    transform: translate(0, 0) scale(1.1);
+  }
+
+  50% {
+    transform: translate(-20px, 20px) scale(1.2);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1.1);
+  }
+}
+
+.nebula-glow {
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: nebulaDrift 30s ease-in-out infinite;
 }
 
 /* ===== ENERGY BEAM ===== */

@@ -20,14 +20,17 @@ export const metadata: Metadata = {
   },
 };
 
+import GalaxyBackground from "@/components/GalaxyBackground";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={outfit.variable}>
-      <body className="font-outfit antialiased">
+    <html lang="vi" className={outfit.variable} suppressHydrationWarning>
+      <body className="font-outfit antialiased" suppressHydrationWarning>
+        <GalaxyBackground />
         {children}
       </body>
     </html>

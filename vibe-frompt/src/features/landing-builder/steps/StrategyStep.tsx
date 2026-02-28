@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLandingBuilderStore } from '@/store/landingBuilderStore';
 import { cn } from '@/lib/utils';
 import { VisualPlaceholder } from '../components/VisualPlaceholder';
@@ -46,14 +46,41 @@ const STYLES = [
 ];
 
 export function StrategyStep() {
-  const { strategy, layout, updateStrategy, setStep } = useLandingBuilderStore(
-    (s) => ({
-      strategy: s.strategy,
-      layout: s.layout,
-      updateStrategy: s.updateStrategy,
-      setStep: s.setStep,
-    })
-  );
+  const strategy = useLandingBuilderStore((s) => s.strategy);
+  const layout = useLandingBuilderStore((s) => s.layout);
+  const updateStrategy = useLandingBuilderStore((s) => s.updateStrategy);
+  const setStep = useLandingBuilderStore((s) => s.setStep);
+  const resetStore = useLandingBuilderStore((s) => s.reset);
+
+  const [brandIdea, setBrandIdea] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleAiSuggest = async () => {
+    if (!brandIdea || brandIdea.length < 3) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch('/api/generate/strategy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brandIdea }),
+      });
+      const data = await res.json();
+      if (res.ok && data) {
+        updateStrategy(data);
+        track('lpb_ai_strategy_generated', { brandIdea });
+      } else {
+        throw new Error(data.error || 'Failed');
+      }
+    } catch (e) {
+      window.dispatchEvent(
+        new CustomEvent('vibe:toast', {
+          detail: { type: 'error', message: 'Lỗi khi AI gợi ý strategy.' },
+        })
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const isValid = useMemo(() => {
     return (
@@ -103,6 +130,33 @@ export function StrategyStep() {
             Xác định brand, mục tiêu và vibe để AI hiểu đúng ý và đề xuất layout
             chuẩn ngay từ đầu.
           </p>
+        </div>
+
+        {/* AI Suggestion */}
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-xl">
+          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-cyan-400">
+            ✨ AI Suggestion (Tự động hóa)
+          </label>
+          <div className="flex gap-2">
+            <input
+              placeholder="Bạn định bán gì? (ví dụ: Mỹ phẩm sạch, App học tập...)"
+              value={brandIdea}
+              onChange={(e) => setBrandIdea(e.target.value)}
+              disabled={isGenerating}
+              className="h-10 flex-1 rounded-lg border border-white/15 bg-black/20 px-3 text-sm text-white focus:border-cyan-400 focus:outline-none"
+            />
+            <button
+              onClick={handleAiSuggest}
+              disabled={isGenerating || brandIdea.length < 3}
+              className={cn(
+                'rounded-lg px-4 text-xs font-bold transition',
+                isGenerating ? 'bg-white/10 text-white/30' : 'bg-cyan-500 text-black hover:bg-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
+              )}
+            >
+              {isGenerating ? 'Generating...' : 'Gợi ý'}
+            </button>
+          </div>
+          <p className="mt-2 text-[10px] text-white/40">AI sẽ tự động điền các mục bên dưới dựa trên ý tưởng của bạn.</p>
         </div>
 
         {/* Brand */}
@@ -253,20 +307,30 @@ export function StrategyStep() {
         </div>
 
         {/* CTA */}
-        <div className="pt-2">
+        <div className="grid grid-cols-[1fr_auto] gap-3 pt-2">
           <button
             type="button"
             onClick={handleNext}
             className={cn(
-              'flex w-full items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition',
+              'flex items-center justify-center rounded-full px-4 py-3 text-sm font-semibold transition',
               'bg-cyan-400 text-black shadow-[0_0_30px_rgba(34,211,238,0.7)] hover:bg-cyan-300',
               !isValid && 'opacity-80'
             )}
           >
             Tiếp tục → Chọn layout
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm('Bạn có chắc muốn xóa hết để làm lại từ đầu?')) resetStore();
+            }}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/40 hover:bg-red-500/10 hover:text-red-400 transition"
+            title="Reset"
+          >
+            🔄
+          </button>
           {!isValid && (
-            <p className="mt-2 text-xs text-red-400/80">
+            <p className="col-span-2 mt-2 text-xs text-red-400/80">
               * Cần ít nhất Tên brand, Loại sản phẩm và 1 Mục tiêu để tiếp tục.
             </p>
           )}

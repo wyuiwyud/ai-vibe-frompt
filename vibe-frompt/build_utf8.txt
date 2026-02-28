@@ -1,0 +1,249 @@
+﻿
+> vibe-frompt@0.1.0 build
+> next build
+
+   â–² Next.js 15.1.11
+
+   Creating an optimized production build ...
+ âœ“ Compiled successfully
+   Linting and checking validity of types ...
+node.exe : 
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo      
+        : NotSpeci    
+fied: (:String) [    ], 
+RemoteExceptio    n
+    + FullyQualifiedE   
+ rrorId : NativeCo    
+mmandError
+ 
+Failed to compile.
+
+./src/app/api/reverse/ro
+ute.ts
+41:5  Warning: Unused 
+eslint-disable 
+directive (no problems 
+were reported from 
+'no-console').
+
+./src/app/dashboard/page
+.tsx
+45:9  Warning: Unused 
+eslint-disable 
+directive (no problems 
+were reported from 
+'no-console').
+
+./src/components/HeroSec
+tion.tsx
+32:9  Error: Error: 
+Calling setState 
+synchronously within an 
+effect can trigger 
+cascading renders
+
+Effects are intended to 
+synchronize state 
+between React and 
+external systems such 
+as manually updating 
+the DOM, state 
+management libraries, 
+or other platform APIs. 
+In general, the body of 
+an effect should do one 
+or both of the 
+following:
+* Update external 
+systems with the latest 
+state from React.
+* Subscribe for updates 
+from some external 
+system, calling 
+setState in a callback 
+function when external 
+state changes.
+
+Calling setState 
+synchronously within an 
+effect body causes 
+cascading renders that 
+can hurt performance, 
+and is not recommended. 
+(https://react.dev/learn
+/you-might-not-need-an-e
+ffect).
+
+C:\Users\wyuiwyud\Docume
+nts\Web AI VIBE FROMPT\v
+ibe-frompt\src\component
+s\HeroSection.tsx:32:9
+  30 |
+  31 |     useEffect(() 
+=> {
+> 32 |         
+setIsMounted(true);
+     |         
+^^^^^^^^^^^^ Avoid 
+calling setState() 
+directly within an 
+effect
+  33 |         
+setParticles(
+  34 |             
+Array.from({ length: 30 
+}, (_, i) => ({
+  35 |                 
+id: i,  react-hooks/set-
+state-in-effect
+
+./src/features/landing-b
+uilder/components/Visual
+Placeholder.tsx
+36:5  Error: Error: 
+Calling setState 
+synchronously within an 
+effect can trigger 
+cascading renders
+
+Effects are intended to 
+synchronize state 
+between React and 
+external systems such 
+as manually updating 
+the DOM, state 
+management libraries, 
+or other platform APIs. 
+In general, the body of 
+an effect should do one 
+or both of the 
+following:
+* Update external 
+systems with the latest 
+state from React.
+* Subscribe for updates 
+from some external 
+system, calling 
+setState in a callback 
+function when external 
+state changes.
+
+Calling setState 
+synchronously within an 
+effect body causes 
+cascading renders that 
+can hurt performance, 
+and is not recommended. 
+(https://react.dev/learn
+/you-might-not-need-an-e
+ffect).
+
+C:\Users\wyuiwyud\Docume
+nts\Web AI VIBE FROMPT\v
+ibe-frompt\src\features\
+landing-builder\componen
+ts\VisualPlaceholder.tsx
+:36:5
+  34 |   // Chá»‰ 
+random sau khi 
+component Ä‘Ă£ mount 
+trĂªn client
+  35 |   useEffect(() 
+=> {
+> 36 |     
+setIsMounted(true);
+     |     ^^^^^^^^^^^^ 
+Avoid calling 
+setState() directly 
+within an effect
+  37 |     const next: 
+FloatingBlock[] = 
+Array.from({ length: 3 
+}).map((_, i) => ({
+  38 |       left: 10 + 
+i * 20 + Math.random() 
+* 10,
+  39 |       top: 10 + 
+i * 15 + Math.random() 
+* 8,  react-hooks/set-st
+ate-in-effect
+
+./src/features/landing-b
+uilder/ReverseSourceModa
+l.tsx
+64:12  Error: 
+Unexpected any. Specify 
+a different type.  @type
+script-eslint/no-explici
+t-any
+72:7  Warning: Unused 
+eslint-disable 
+directive (no problems 
+were reported from 
+'no-console').
+
+./src/features/landing-b
+uilder/steps/ExecutionSt
+ep.tsx
+150:7  Warning: Unused 
+eslint-disable 
+directive (no problems 
+were reported from 
+'no-console').
+154:7  Warning: Unused 
+eslint-disable 
+directive (no problems 
+were reported from 
+'no-console').
+
+./src/features/landing-b
+uilder/steps/StrategySte
+p.tsx
+71:10  Error: 
+Unexpected any. Specify 
+a different type.  @type
+script-eslint/no-explici
+t-any
+
+./src/lib/analytics.ts
+8:71  Error: Unexpected 
+any. Specify a 
+different type.  @typesc
+ript-eslint/no-explicit-
+any
+12:5  Warning: Unused 
+eslint-disable 
+directive (no problems 
+were reported from 
+'no-console').
+
+./src/lib/supabaseClient
+.ts
+7:3  Warning: Unused 
+eslint-disable 
+directive (no problems 
+were reported from 
+'no-console').
+
+./src/store/landingBuild
+erStore.ts
+29:28  Error: 
+Unexpected any. Specify 
+a different type.  @type
+script-eslint/no-explici
+t-any
+
+info  - Need to disable 
+some ESLint rules? 
+Learn more here: https:/
+/nextjs.org/docs/app/api
+-reference/config/eslint
+#disabling-rules
