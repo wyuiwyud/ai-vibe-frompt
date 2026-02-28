@@ -35,6 +35,7 @@ export default function HeroSection() {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         setParticles(
             Array.from({ length: 30 }, (_, i) => ({
                 id: i,

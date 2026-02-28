@@ -44,6 +44,7 @@ export function VisualPlaceholder({
       top: 10 + i * 15 + seededRandom(i * 2.7) * 8,
       width: 28 + seededRandom(i * 3.3) * 18,
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     setBlocks(next);
     setIsMounted(true);
   }, []);

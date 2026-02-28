@@ -22,6 +22,7 @@ const GalaxyBackground: React.FC = () => {
             duration: seededRandom(i * 4.1) * 5 + 5,
             delay: seededRandom(i * 5.9) * 10,
         }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         setStars(newStars);
         setIsMounted(true);
     }, []);

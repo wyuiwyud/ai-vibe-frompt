@@ -113,7 +113,7 @@ export function StructureStep() {
                 <p className="text-sm text-white/60">
                     AI đã phân tích mục tiêu{' '}
                     <span className="text-cyan-300 font-medium">
-                        "{strategy.goals[0] || 'Phát triển'}"
+                        &quot;{strategy.goals[0] || 'Phát triển'}&quot;
                     </span>{' '}
                     của bạn và đề xuất 3 archetype layout tối ưu nhất.
                 </p>
@@ -177,7 +177,7 @@ export function StructureStep() {
                                         Điểm mạnh:
                                     </p>
                                     <p className="text-[10px] text-white/70 italic leading-snug">
-                                        "{arch.pros}"
+                                        &quot;{arch.pros}&quot;
                                     </p>
                                 </div>
                             </div>
