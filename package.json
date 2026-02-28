@@ -1,7 +1,14 @@
 {
-  "dependencies": {
-    "@supabase/supabase-js": "^2.98.0",
-    "sonner": "^2.0.7",
-    "zustand": "^5.0.11"
+  "name": "vibe-frompt-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd vibe-frompt && npm run build",
+    "dev": "cd vibe-frompt && npm run dev",
+    "start": "cd vibe-frompt && npm start",
+    "lint": "cd vibe-frompt && npm run lint"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

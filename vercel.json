@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "cd vibe-frompt && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "vibe-frompt/.next",
-  "framework": "nextjs",
+  "installCommand": "npm install",
   "env": {
     "NEXT_PUBLIC_SUPABASE_URL": "@next-public-supabase-url",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@next-public-supabase-anon-key"
