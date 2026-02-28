@@ -65,7 +65,7 @@ export default function Home() {
   };
 
   return (
-    <main style={{ position: 'relative', minHeight: '100vh', color: '#fff', overflowX: 'hidden' }}>
+    <main style={{ position: 'relative', minHeight: '100vh', color: '#fff', overflowX: 'hidden' }} suppressHydrationWarning>
       <CursorSpotlight />
 
       {/* Nav */}

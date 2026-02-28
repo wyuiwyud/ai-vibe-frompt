@@ -27,7 +27,7 @@ const GalaxyBackground: React.FC = () => {
     }, []);
 
     return (
-        <div className="fixed inset-0 z-[-1] overflow-hidden bg-[#030010] pointer-events-none">
+        <div className="fixed inset-0 z-[-1] overflow-hidden bg-[#030010] pointer-events-none" suppressHydrationWarning>
             {/* Deep Cosmos Layer */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#0f001f_0%,#030010_100%)]" />
 
@@ -42,7 +42,7 @@ const GalaxyBackground: React.FC = () => {
             />
 
             {/* Stars */}
-            {stars.map((star) => (
+            {isMounted && stars.map((star) => (
                 <div
                     key={star.id}
                     className="absolute rounded-full bg-white opacity-0"

@@ -46,9 +46,9 @@ export default function CursorSpotlight() {
 
     return (
         <>
-            <div ref={dotRef} className="cursor-dot" />
-            <div ref={ringRef} className="cursor-ring" />
-            <div ref={spotlightRef} className="spotlight" />
+            <div ref={dotRef} className="cursor-dot" suppressHydrationWarning />
+            <div ref={ringRef} className="cursor-ring" suppressHydrationWarning />
+            <div ref={spotlightRef} className="spotlight" suppressHydrationWarning />
         </>
     );
 }
