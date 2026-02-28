@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 //     type DropResult,
 // } from '@hello-pangea/dnd';
 import {
-    GripVertical,
     Trash2,
     Plus,
     Layout,
