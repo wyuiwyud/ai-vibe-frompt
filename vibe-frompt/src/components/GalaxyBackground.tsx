@@ -58,7 +58,7 @@ const GalaxyBackground: React.FC = () => {
                 />
             ))}
 
-            <style jsx>{`
+            <style>{`
         @keyframes twinkle {
           0%, 100% { opacity: 0; transform: scale(0.5); }
           50% { opacity: 0.8; transform: scale(1.2); }
