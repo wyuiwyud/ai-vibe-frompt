@@ -1,4 +1,4 @@
-<!-- Double kick Vercel build - fresh trigger after reconnect - 2026 -->
+<!-- Production deploy from main - HeroSection fix applied c4cc287 -->
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
