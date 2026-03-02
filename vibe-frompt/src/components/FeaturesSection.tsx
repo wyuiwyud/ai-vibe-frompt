@@ -4,34 +4,34 @@ import { motion } from 'framer-motion';
 
 const FEATURES = [
     {
-        icon: '🧠', title: 'AI Context Engine Việt',
-        desc: 'Tự động thêm ví dụ thực tế VN, văn phong chuẩn, slang phù hợp từng nhóm tuổi.',
+        icon: '⚡', title: 'Smart Prompt Builder',
+        desc: 'Form tối ưu cho Writing, Coding, Image. Build prompt chất lượng trong vài giây, không cần kỹ năng prompt engineering.',
         color: '#00f5ff',
     },
     {
-        icon: '⚡', title: 'Build Prompt 3 Giây',
-        desc: 'Form thông minh tối đa 8 fields, không lãng phí thời gian. Nhanh gọn hoặc nâng cao theo nhu cầu.',
+        icon: '🎯', title: 'Prompt Quality Score',
+        desc: 'Tự động chấm điểm Clarity, Structure, Creativity. Biết ngay prompt của bạn chuẩn professional hay cần cải thiện.',
         color: '#7b2fff',
     },
     {
-        icon: '🎯', title: 'Prompt Score Meter',
-        desc: 'Chấm điểm Clarity, Structure, Creativity. Gold badge khi prompt đạt chuẩn professional.',
-        color: '#ffd700',
+        icon: '🖼️', title: 'Visual Inverse Engine',
+        desc: 'Upload ảnh, AI phân tích thành từng thành phần (subject, environment, cinematography, style) để tái tạo hoặc nâng cấp.',
+        color: '#ff6633',
     },
     {
-        icon: '🔄', title: 'Auto-Refine Engine',
-        desc: 'Một click để tạo biến thể: Thuyết phục hơn, Kỹ thuật hơn, Cảm xúc hơn.',
+        icon: '🏗️', title: 'AI Landing Page Builder',
+        desc: '5 bước từ ý tưởng đến landing page MVP. Tự động tạo strategy, structure, optimization, finalize – sẵn sàng deploy.',
         color: '#ff00cc',
     },
     {
-        icon: '📚', title: 'Prompt Library',
-        desc: 'Lưu, tag, và tái sử dụng prompt yêu thích. Bộ sưu tập cá nhân ngày càng mạnh hơn.',
+        icon: '🎨', title: 'Galaxy 4D & Cinematic Styles',
+        desc: 'Signature styles của VIBE: Galaxy 4D (cosmic nebula aesthetic) và Cinematic Epic (Hollywood blockbuster quality).',
         color: '#00ffaa',
     },
     {
-        icon: '🔗', title: 'Share Prompt Card',
-        desc: 'Tạo link share đẹp, auto thumbnail. Chia sẻ lên Zalo, Facebook chỉ 1 click.',
-        color: '#ff6633',
+        icon: '💾', title: 'Save & Reuse',
+        desc: 'Lưu prompt, template, và landing page drafts. Tái sử dụng và cải tiến dần dần.',
+        color: '#ffd700',
     },
 ];
 
@@ -44,10 +44,10 @@ export default function FeaturesSection() {
                 <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ textAlign: 'center', marginBottom: 56 }}>
                     <div className="badge badge-cyan" style={{ marginBottom: 16 }}>Tính Năng</div>
                     <h2 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, marginBottom: 16 }}>
-                        Vì Sao Dùng <span className="text-gradient">VIBE Frompt?</span>
+                        Tại Sao Chọn <span className="text-gradient">VIBE Frompt?</span>
                     </h2>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 480, margin: '0 auto', fontSize: 16, lineHeight: 1.6 }}>
-                        Không chỉ là form tạo prompt. Đây là AI Amplifier – biến ý tưởng thành công cụ làm việc mạnh mẽ.
+                    <p style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 520, margin: '0 auto', fontSize: 16, lineHeight: 1.6 }}>
+                        Bộ công cụ AI toàn diện: từ Build Prompt, Visual Analysis, đến Landing Page. Mọi thứ bạn cần để làm việc ngon hơn, nhanh hơn.
                     </p>
                 </motion.div>
 
