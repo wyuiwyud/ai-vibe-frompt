@@ -78,6 +78,7 @@ export default function HeroSection() {
                     <div key={i} style={{ position: 'absolute', top: '50%', left: '50%', transform: `translate(-50%, -50%) scale(${i})`, width: 400, height: 400, borderRadius: '50%', border: '1px solid rgba(0,245,255,0.06)', animation: `pulseRing ${3 + i}s ease-out ${i * 0.8}s infinite` }} />
                 ))}
                 {/* Floating particles */}
+                <div suppressHydrationWarning>
                 {particles.map(p => (
                     <div key={p.id} className="particle" style={{
                         left: `${p.x}%`, top: `${p.y}%`,
@@ -91,6 +92,7 @@ export default function HeroSection() {
                         opacity: 0.4,
                     } as React.CSSProperties} />
                 ))}
+                </div>
             </div>
 
             <div className="container" style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 900 }}>

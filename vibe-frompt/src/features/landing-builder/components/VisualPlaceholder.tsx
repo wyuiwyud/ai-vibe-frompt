@@ -39,13 +39,11 @@ export function VisualPlaceholder({
 
   // Chỉ random sau khi component đã mount trên client
   useEffect(() => {
-    setIsMounted(true);
     const next: FloatingBlock[] = Array.from({ length: 3 }).map((_, i) => ({
       left: 10 + i * 20 + seededRandom(i * 1.5) * 10,
       top: 10 + i * 15 + seededRandom(i * 2.7) * 8,
       width: 28 + seededRandom(i * 3.3) * 18,
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     setBlocks(next);
     setIsMounted(true);
   }, []);
@@ -61,7 +59,7 @@ export function VisualPlaceholder({
       </div>
 
       {/* Decorative floating blocks – random hóa chỉ sau khi mount để tránh hydration mismatch */}
-      <div className="pointer-events-none absolute inset-0 opacity-30">
+      <div className="pointer-events-none absolute inset-0 opacity-30" suppressHydrationWarning>
         {isMounted && blocks.map((b, idx) => (
           <div
             key={idx}
