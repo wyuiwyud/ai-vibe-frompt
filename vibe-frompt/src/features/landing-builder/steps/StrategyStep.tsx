@@ -71,7 +71,8 @@ export function StrategyStep() {
       } else {
         throw new Error(data.error || 'Failed');
       }
-    } catch (e) {
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
       window.dispatchEvent(
         new CustomEvent('vibe:toast', {
           detail: { type: 'error', message: 'Lỗi khi AI gợi ý strategy.' },

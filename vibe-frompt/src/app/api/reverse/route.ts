@@ -38,7 +38,6 @@ export async function POST(req: NextRequest) {
 
     return Response.json(suggested, { status: 200 });
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.error(e);
     return Response.json(
       { error: 'Reverse mode gặp lỗi. Thử lại sau.' },

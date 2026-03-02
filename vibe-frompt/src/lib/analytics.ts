@@ -6,11 +6,10 @@ export type AnalyticsEvent =
   | 'lpb_ai_strategy_generated'
   | 'project_saved';
 
-export function track(event: AnalyticsEvent, payload?: Record<string, any>) {
+export function track(event: AnalyticsEvent, payload?: Record<string, unknown>) {
   try {
     if (typeof window === 'undefined') return;
     // Vercel Analytics hoặc các tool khác có thể hook vào đây.
-    // eslint-disable-next-line no-console
     console.log('[analytics]', event, payload || {});
   } catch {
     // ignore

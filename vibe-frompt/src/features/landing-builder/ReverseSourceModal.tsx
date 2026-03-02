@@ -57,7 +57,7 @@ export function ReverseSourceModal({ open, onClose }: ReverseSourceModalProps) {
       });
       updateLayout({
         layoutType: data.layoutTypeGuess || 'actionFirst',
-      } as any);
+      } as Record<string, string>);
       fireToast(
         'success',
         'Đã reverse xong khung layout. Kiểm tra lại ở bước Strategy & Structure nhé.'
@@ -65,7 +65,6 @@ export function ReverseSourceModal({ open, onClose }: ReverseSourceModalProps) {
       setStep(1);
       onClose();
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error(e);
       fireToast(
         'error',

@@ -145,11 +145,9 @@ export function ExecutionStep() {
         'success',
         'Dự án đã được lưu! Mở lại trong dashboard khi bạn build xong.'
       );
-      // eslint-disable-next-line no-console
       console.log('Saved project', data);
       track('project_saved');
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error(e);
       fireToast(
         'error',

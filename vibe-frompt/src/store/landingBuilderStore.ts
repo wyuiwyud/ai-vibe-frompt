@@ -26,7 +26,7 @@ export type SectionType =
 export interface LandingSection {
   id: string;
   type: SectionType;
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
 }
 
 export interface TypographyConfig {

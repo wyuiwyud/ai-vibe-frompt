@@ -45,7 +45,7 @@ function generateParticles(): Particle[] {
 }
 
 export default function HeroSection() {
-    const [particles] = useState<Particle[]>(generateParticles);
+    const [particles] = useState<Particle[]>(() => generateParticles());
     const [demoLine, setDemoLine] = useState(0);
     const [isGlitch, setIsGlitch] = useState(false);
     const heroRef = useRef<HTMLElement>(null);

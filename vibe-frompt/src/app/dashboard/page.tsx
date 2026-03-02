@@ -42,7 +42,6 @@ export default function DashboardPage() {
         if (error) throw error;
         setProjects(data || []);
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.error(e);
       } finally {
         setLoading(false);

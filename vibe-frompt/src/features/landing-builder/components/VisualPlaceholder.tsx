@@ -39,6 +39,7 @@ export function VisualPlaceholder({
 
   // Chỉ random sau khi component đã mount trên client
   useEffect(() => {
+    setIsMounted(true);
     const next: FloatingBlock[] = Array.from({ length: 3 }).map((_, i) => ({
       left: 10 + i * 20 + seededRandom(i * 1.5) * 10,
       top: 10 + i * 15 + seededRandom(i * 2.7) * 8,
