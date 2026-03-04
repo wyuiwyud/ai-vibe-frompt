@@ -45,12 +45,19 @@ function generateParticles(): Particle[] {
 }
 
 export default function HeroSection() {
-    const [particles] = useState<Particle[]>(() => generateParticles());
+    const [particles, setParticles] = useState<Particle[]>([]);
+    const [isMounted, setIsMounted] = useState(false);
     const [demoLine, setDemoLine] = useState(0);
     const [isGlitch, setIsGlitch] = useState(false);
     const heroRef = useRef<HTMLElement>(null);
     const { scrollYProgress } = useScroll({ target: heroRef });
     const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
+
+    // Generate particles only on client to avoid hydration mismatch
+    useEffect(() => {
+        setParticles(generateParticles());
+        setIsMounted(true);
+    }, []);
 
     // Demo line interval with proper cleanup
     useEffect(() => {
@@ -70,8 +77,8 @@ export default function HeroSection() {
         <section ref={heroRef} suppressHydrationWarning style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: '120px 24px 80px' }}>
             {/* Animated background orbs */}
             <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-                <motion.div style={({ position: 'absolute', top: '20%', left: '10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,245,255,0.08) 0%, transparent 70%)', filter: 'blur(40px)', y }) as React.CSSProperties} />
-                <motion.div style={({ position: 'absolute', top: '40%', right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,0,204,0.07) 0%, transparent 70%)', filter: 'blur(40px)', y: useTransform(scrollYProgress, [0, 1], [0, -60]) }) as React.CSSProperties} />
+                <motion.div style={{ position: 'absolute', top: '20%', left: '10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,245,255,0.08) 0%, transparent 70%)', filter: 'blur(40px)', y: y as unknown as string }} />
+                <motion.div style={{ position: 'absolute', top: '40%', right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,0,204,0.07) 0%, transparent 70%)', filter: 'blur(40px)', y: useTransform(scrollYProgress, [0, 1], [0, -60]) as unknown as string }} />
                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(123,47,255,0.05) 0%, transparent 70%)', filter: 'blur(60px)' }} />
                 {/* Pulse rings */}
                 {[1, 2, 3].map(i => (
@@ -79,19 +86,19 @@ export default function HeroSection() {
                 ))}
                 {/* Floating particles */}
                 <div suppressHydrationWarning>
-                {particles.map(p => (
-                    <div key={p.id} className="particle" style={{
-                        left: `${p.x}%`, top: `${p.y}%`,
-                        width: p.size, height: p.size,
-                        background: p.color,
-                        '--duration': `${p.duration}s`,
-                        '--delay': `${p.delay}s`,
-                        '--dx1': `${p.dx}px`, '--dy1': `${p.dy}px`,
-                        '--dx2': `${p.dx * 0.7}px`, '--dy2': `${p.dy * 1.5}px`,
-                        '--dx3': `${p.dx * 1.3}px`, '--dy3': `${p.dy * 0.8}px`,
-                        opacity: 0.4,
-                    } as React.CSSProperties} />
-                ))}
+                    {isMounted && particles.map(p => (
+                        <div key={p.id} className="particle" style={{
+                            left: `${p.x}%`, top: `${p.y}%`,
+                            width: p.size, height: p.size,
+                            background: p.color,
+                            '--duration': `${p.duration}s`,
+                            '--delay': `${p.delay}s`,
+                            '--dx1': `${p.dx}px`, '--dy1': `${p.dy}px`,
+                            '--dx2': `${p.dx * 0.7}px`, '--dy2': `${p.dy * 1.5}px`,
+                            '--dx3': `${p.dx * 1.3}px`, '--dy3': `${p.dy * 0.8}px`,
+                            opacity: 0.4,
+                        } as React.CSSProperties} />
+                    ))}
                 </div>
             </div>
 
