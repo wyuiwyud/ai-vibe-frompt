@@ -1,5 +1,6 @@
 import type { ReaddyInput, ReaddyOutput } from './prompts';
 import { buildRtcePrompt } from './prompts';
+import type { StrategyState, AIDirection, ChatMessage } from '@/features/landing-builder/types';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -58,6 +59,70 @@ async function callGroq(systemPrompt: string, temperature = 0.8): Promise<string
 export const callGroqText = callGroq;
 
 // ─── Landing Builder AI ─────────────────────────────────────────────────────
+
+// ─── Landing Builder AI ─────────────────────────────────────────────────────
+export async function generateLandingDirections(strategy: StrategyState): Promise<AIDirection[] | null> {
+  const prompt = `You are a Senior Startup Brand Strategist and Conversion Architect.
+Based on this strategy:
+- Brand: ${strategy.brandName}
+- Product: ${strategy.productType}
+- Goals: ${strategy.goals.join(', ')}
+- Theme: ${strategy.style}
+- Primary Color: ${strategy.primaryColor}
+
+Task: Create 2 distinct, high-conversion Landing Page "Directions" (strategies) in VIETNAMESE.
+
+Direction 1: "Action-Driven / Benefit First" (Focus on speed, problem-solving, and immediate CTA).
+Direction 2: "Storytelling / Trust First" (Focus on origin, quality details, and emotional connection).
+
+### Formula for Reasoning:
+Explain WHY this direction works for this specific product and audience.
+
+### Formula for Design System:
+- Typography: Pick a font (Inter, Poppins, Space Grotesk, Manrope) that matches the Vibe.
+- Colors: Suggest a premium hex palette matching ${strategy.primaryColor}.
+
+Return ONLY a valid JSON array of 2 objects:
+[
+  {
+    "id": 1,
+    "title": "...",
+    "reasoning": "...",
+    "colors": "...",
+    "font": "Inter",
+    "headline": "...",
+    "subheadline": "...",
+    "sections": [{ "type": "hero", "title": "...", "desc": "..." }, ...]
+  },
+  ...
+]
+
+Return ONLY raw JSON. No markdown. No explanation.`;
+
+  const aiText = await callGroqText(prompt, 0.7);
+  if (!aiText) return null;
+
+  try {
+    const cleaned = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error('[aiClient] Failed to parse directions JSON:', e);
+    return null;
+  }
+}
+
+export async function refineLandingPlan(chatHistory: ChatMessage[], strategy: StrategyState): Promise<string> {
+  const prompt = `You are an AI assistant helping a user refine their Landing Page strategy for "${strategy.brandName}".
+  
+History:
+${chatHistory.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')}
+
+Task: Respond briefly and professionally in Vietnamese to the user's latest message. 
+If they have a request, confirm how you will adjust the plan. 
+Keep it under 150 words. Focus on being helpful and expert-like.`;
+
+  return await callGroqText(prompt, 0.8) || "Tôi đã ghi nhận yêu cầu của bạn. Tôi sẽ áp dụng điều này vào prompt cuối cùng.";
+}
 
 export async function generateReaddyPrompt(input: ReaddyInput): Promise<ReaddyOutput> {
   const { strategy, layout, refinement } = input;

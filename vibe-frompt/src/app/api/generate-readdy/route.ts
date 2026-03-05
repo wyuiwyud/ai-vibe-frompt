@@ -1,11 +1,13 @@
 import { NextRequest } from 'next/server';
-import { generateReaddyPrompt } from '@/server/ai/aiClient';
-import type { LayoutState, StrategyState } from '@/store/landingBuilderStore';
+import { generateReaddyPrompt, generateLandingDirections, refineLandingPlan } from '@/server/ai/aiClient';
+import type { LayoutState, StrategyState, ChatMessage } from '@/features/landing-builder/types';
 
 interface GenerateBody {
+  mode?: 'get_directions' | 'generate_final' | 'refine_strategy';
   strategy: StrategyState;
   layout: LayoutState;
   refinement?: string;
+  chatHistory?: ChatMessage[];
 }
 
 export async function POST(req: NextRequest) {
@@ -17,6 +19,16 @@ export async function POST(req: NextRequest) {
         { error: 'Thiếu dữ liệu strategy hoặc layout.' },
         { status: 400 }
       );
+    }
+
+    if (json.mode === 'get_directions') {
+      const directions = await generateLandingDirections(json.strategy);
+      return Response.json({ directions }, { status: 200 });
+    }
+
+    if (json.mode === 'refine_strategy') {
+      const response = await refineLandingPlan(json.chatHistory || [], json.strategy);
+      return Response.json({ response }, { status: 200 });
     }
 
     const result = await generateReaddyPrompt({
