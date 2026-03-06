@@ -98,7 +98,7 @@ export default function Stage2Analysis({
 
   const hasSignals = detectedSignals && (
     detectedSignals.format || detectedSignals.level ||
-    detectedSignals.domain !== 'General' || detectedSignals.audience
+    detectedSignals.domain !== 'Chung' || detectedSignals.audience
   );
 
   return (
@@ -134,10 +134,13 @@ export default function Stage2Analysis({
               🧩 Tín hiệu AI phát hiện:
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-              {detectedSignals.format && <SignalTag label="Format" value={detectedSignals.format} color="#7b2fff" />}
+              {detectedSignals.format && <SignalTag label="Định dạng" value={detectedSignals.format} color="#7b2fff" />}
               {detectedSignals.level && <SignalTag label="Cấp độ" value={detectedSignals.level} color="#ffd700" />}
-              {detectedSignals.domain && detectedSignals.domain !== 'General' && <SignalTag label="Domain" value={detectedSignals.domain} color="#00f5ff" />}
+              {detectedSignals.domain && detectedSignals.domain !== 'Chung' && <SignalTag label="Lĩnh vực" value={detectedSignals.domain} color="#00f5ff" />}
               {detectedSignals.audience && <SignalTag label="Đối tượng" value={detectedSignals.audience} color="#ff00cc" />}
+              {(detectedSignals as any).hidden_standards?.map((std: string, i: number) => (
+                <SignalTag key={i} label="Tiêu chuẩn" value={std} color="#ffd700" />
+              ))}
             </div>
           </motion.div>
         )}

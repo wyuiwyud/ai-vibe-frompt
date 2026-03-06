@@ -19,6 +19,7 @@ interface ResearchResult {
   understanding_was_correct: boolean;
   what_changed: string;
   why_user_likely_used_this_term: string;
+  technical_constraints?: string[];
 }
 interface ClarifyOption {
   option_id: string;
@@ -72,9 +73,9 @@ interface Stage3ClarifyProps {
 // ─── Helpers ─────────────────────────────────────────────────
 const PURPOSES = [
   { id: 'SEO & Traffic', label: '🔍 SEO & Traffic', color: '#00f5ff' },
-  { id: 'Viral / Engagement', label: '🔥 Viral / Engagement', color: '#ff6633' },
-  { id: 'Brand Authority', label: '🏆 Brand Authority', color: '#ffd700' },
-  { id: 'Chuyển đổi (Sales/Lead)', label: '💰 Sales & Lead', color: '#7b2fff' },
+  { id: 'Viral / Tương tác', label: '🔥 Viral / Tương tác', color: '#ff6633' },
+  { id: 'Uy tín thương hiệu', label: '🏆 Uy tín thương hiệu', color: '#ffd700' },
+  { id: 'Doanh số & Leads', label: '💰 Doanh số & Leads', color: '#7b2fff' },
 ];
 
 const OPTION_COLORS = ['#00f5ff', '#7b2fff', '#ff00cc', '#ffd700'];
@@ -122,7 +123,7 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
   const [expandedTerm, setExpandedTerm] = useState<string | null>(null);
 
   // User inputs (shown after verification is done)
-  const [purpose, setPurpose] = useState('Brand Authority');
+  const [purpose, setPurpose] = useState('Uy tín thương hiệu');
   const [keywords, setKeywords] = useState('');
   const [readyForGenerate, setReadyForGenerate] = useState(false);
 
@@ -278,7 +279,7 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
                   }}>
                     ⚡ Bước A — {clarifyData.step_a.label}
                   </span>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Confidence: {clarifyData.step_a.preliminary_answer.confidence}</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Độ tin cậy: {clarifyData.step_a.preliminary_answer.confidence}</span>
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
                   "{clarifyData.step_a.preliminary_answer.title}"
@@ -381,10 +382,30 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
                         </div>
                       )}
                       {r.understanding_was_correct && (
-                        <div style={{ fontSize: 11, color: 'rgba(0,255,100,0.6)' }}>
+                        <div style={{ fontSize: 11, color: 'rgba(0,255,100,0.6)', marginBottom: 6 }}>
                           {r.why_user_likely_used_this_term}
                         </div>
                       )}
+                      
+                      {/* Deep Research Details */}
+                      <div style={{ 
+                        marginTop: 4, padding: '8px 10px', borderRadius: 8, 
+                        background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' 
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.3)' }}>NGUỒN: {r.source}</span>
+                        </div>
+                        {(r as any).technical_constraints && (r as any).technical_constraints.length > 0 && (
+                          <div style={{ marginTop: 4 }}>
+                            { (r as any).technical_constraints.map((c: string, idx: number) => (
+                              <div key={idx} style={{ fontSize: 10, color: '#fff', marginBottom: 2, display: 'flex', gap: 6 }}>
+                                <span style={{ color: '#00f5ff' }}>•</span>
+                                <span>{c}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

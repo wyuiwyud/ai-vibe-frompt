@@ -44,6 +44,7 @@ export interface AnalyzeResult {
     level: string | null;
     domain: string;
     audience: string;
+    hidden_standards?: string[];
   };
   web_trends_summary: string;
   directions: DirectionItem[];
@@ -56,6 +57,8 @@ export interface PhaseData {
     level_confirmed: string | null;
     domain_confirmed: string;
     audience_confirmed: string;
+    hidden_standards?: string[];
+    technical_constraints?: string[];
   };
   phase2_self_check: {
     draft_sample: string;
@@ -113,25 +116,26 @@ Return ONLY this JSON (no markdown, no explanation):
 {
   "original_idea_preserved": "${rawInput}",
   "detected_signals": {
-    "format": "<detected format type or null>",
-    "level": "<educational level or null>",
-    "domain": "<subject domain — inferred from input>",
-    "audience": "<target audience — inferred from input>"
+    "format": "<định dạng phát hiện được hoặc null>",
+    "level": "<cấp độ giáo dục hoặc null>",
+    "domain": "<lĩnh vực — suy luận từ đầu vào>",
+    "audience": "<đối tượng mục tiêu — suy luận từ đầu vào>",
+    "hidden_standards": ["<danh sách các bộ quy chuẩn/tiêu chuẩn ẩn nếu có, VD: THPT 2025 Phần III>"]
   },
-  "web_trends_summary": "<2-3 sentences about trending content formats/demand for this FULL topic>",
+  "web_trends_summary": "<2-3 câu về xu hướng nội dung/nhu cầu cho chủ đề đầy đủ này bằng tiếng Việt, phân tích sâu các từ khóa cụ thể>",
   "directions": [
     {
       "id": "A",
       "label": "A",
-      "name": "<short angle name — 3-5 words>",
-      "full_topic": "<EXACT original idea> — <added angle>",
-      "why_this_direction": "<1-2 sentences: why this angle + trend data>",
-      "content_type": "Blog | Video | Report | Essay | Exercise Sheet | Thread | Email | Script",
+      "name": "<tên hướng đi ngắn gọn — 3-5 từ>",
+      "full_topic": "<GIỮ NGUYÊN ý tưởng gốc> — <thêm góc nhìn mới>",
+      "why_this_direction": "<1-2 câu: lý do chọn hướng này dựa trên phân tích từ khóa & dữ liệu cộng đồng>",
+      "content_type": "Blog | Video | Báo cáo | Tiểu luận | Phiếu bài tập | Thread | Email | Kịch bản",
       "relevance_score": 93,
-      "audience_fit": "<who this serves best — specific profile>",
-      "description": "<1 sentence summary of this direction>",
+      "audience_fit": "<ai sẽ thấy nội dung này hữu ích nhất — hồ sơ cụ thể>",
+      "description": "<1 câu tóm tắt hướng đi này bằng tiếng Việt>",
       "match": 93,
-      "type": "Blog | Video | Report | Essay | Exercise Sheet | Thread | Email | Script"
+      "type": "Blog | Video | Báo cáo | Tiểu luận | Phiếu bài tập | Thread | Email | Kịch bản"
     },
     {
       "id": "B", "label": "B",
@@ -146,7 +150,10 @@ Return ONLY this JSON (no markdown, no explanation):
       "description": "...", "match": 71, "type": "..."
     }
   ]
-}`;
+}
+
+IMPORTANT: All values (name, why_this_direction, audience_fit, description, web_trends_summary, etc.) MUST be in VIETNAMESE.
+Pay special attention to "Hidden Standards" (e.g. if the user says "trả lời ngắn", they might mean the new "Part III" of the THPT 2025 format with specific rounding/filling rules). Detect and flag these!`;
 
   const text = await callGroqText(prompt, 0.65);
 
@@ -174,7 +181,7 @@ Return ONLY this JSON (no markdown, no explanation):
 
   return {
     original_idea_preserved: rawInput,
-    detected_signals: { format: null, level: null, domain: 'General', audience: 'Người dùng Việt Nam' },
+    detected_signals: { format: null, level: null, domain: 'Chung', audience: 'Người dùng Việt Nam', hidden_standards: [] },
     web_trends_summary: `Nội dung về "${rawInput}" đang được tìm kiếm nhiều. Định dạng blog phân tích và hướng dẫn thực tế nhận được lượng tương tác cao nhất.`,
     directions: [
       fallbackAngle('A', 'Blog', 92, 'Người đọc muốn hiểu sâu về chủ đề'),
@@ -234,32 +241,36 @@ rising_related_keywords: 3-5 trending adjacent terms
 competitor_content_summary: what typically exists
 recommended_angle: unique angle not covered elsewhere
 
-Return ONLY this JSON:
+Return ONLY this JSON in VIETNAMESE:
 {
   "phase1_signals": {
-    "detected_tokens": [{"token":"<text>","meaning":"<confirmed>","category":"FORMAT|LEVEL|DOMAIN|AUDIENCE|STYLE","confirmed":true}],
-    "format_confirmed": "<format>",
-    "level_confirmed": "<level or null>",
-    "domain_confirmed": "<domain>",
-    "audience_confirmed": "<audience>"
+    "detected_tokens": [{"token":"<văn bản>","meaning":"<ý nghĩa thực tế>","category":"FORMAT|LEVEL|DOMAIN|AUDIENCE|STYLE","confirmed":true}],
+    "format_confirmed": "<định dạng bằng tiếng Việt>",
+    "level_confirmed": "<cấp độ giáo dục hoặc null>",
+    "domain_confirmed": "<lĩnh vực>",
+    "audience_confirmed": "<đối tượng mục tiêu>",
+    "hidden_standards": ["<danh sách tiêu chuẩn ẩn phát hiện được>"],
+    "technical_constraints": ["<danh sách quy định kỹ thuật cụ thể>"]
   },
   "phase2_self_check": {
-    "draft_sample": "<2-3 items>",
-    "format_check": "pass — <reason>",
-    "level_check": "pass — <reason>",
-    "accuracy_check": "pass — <reason>",
+    "draft_sample": "<2-3 đầu mục mẫu bằng tiếng Việt>",
+    "format_check": "đạt — <lý do>",
+    "level_check": "đạt — <lý do>",
+    "accuracy_check": "đạt — <lý do>",
     "confidence_score": 88,
-    "gaps_detected": ["<gap1>","<gap2>"]
+    "gaps_detected": ["<lỗ hổng 1>","<lỗ hổng 2>"]
   },
   "phase3_enrichment": {
     "trend_direction": "rising",
-    "content_gap": "<gap>",
-    "best_platform": "<platform>",
-    "rising_related_keywords": ["<kw1>","<kw2>","<kw3>"],
-    "competitor_content_summary": "<summary>",
-    "recommended_angle": "<angle>"
+    "content_gap": "<phần nội dung còn thiếu trên thị trường>",
+    "best_platform": "<nền tảng tối ưu>",
+    "rising_related_keywords": ["<từ khoá 1>","<từ khoá 2>","<từ khoá 3>"],
+    "competitor_content_summary": "<tóm tắt nội dung đối thủ>",
+    "recommended_angle": "<góc độ độc đáo đề xuất>"
   }
-}`;
+}
+
+IMPORTANT: EVERY FIELD MUST BE IN VIETNAMESE.`;
 
   let phaseData: PhaseData | undefined;
   const analysisText = await callGroqText(analysisPrompt, 0.55);
@@ -305,6 +316,8 @@ Include the unique angle: ${p3?.recommended_angle ?? 'authoritative, differentia
 
 [CONTEXT]
 • Target audience: ${p1?.audience_confirmed ?? 'Vietnamese readers interested in the topic'}
+• Hidden Standards detected: ${p1?.hidden_standards?.join(', ') || 'None identified'}
+• Technical Constraints: ${p1?.technical_constraints?.join(', ') || 'Follow best practices'}
 • Publishing platform: ${p3?.best_platform ?? 'Website / LinkedIn'}
 • Tone: [specific tone matching audience "${p1?.audience_confirmed}" and goal "${purpose}"]
 • Format: [exact structure for confirmed format type "${p1?.format_confirmed ?? contentType}"]
@@ -324,7 +337,9 @@ Structure:
 
 [INSTRUCTION — NON-NEGOTIABLE]
 1. ${p1?.format_confirmed ? `Strictly follow "${p1.format_confirmed}" format — do not mix with other formats.` : 'Follow the confirmed content format precisely.'}
-2. Address these gaps explicitly: ${p2?.gaps_detected?.join('; ') ?? 'maintain depth and specificity'}.
+2. Strictly adhere to these Hidden Standards: ${p1?.hidden_standards?.join('; ') || 'Standard professional quality'}.
+3. Implement these Technical Constraints EXACTLY: ${p1?.technical_constraints?.join('; ') || 'Standard formatting'}.
+4. Address these gaps explicitly: ${p2?.gaps_detected?.join('; ') ?? 'maintain depth and specificity'}.
 3. Leverage rising keywords naturally: ${p3?.rising_related_keywords?.join(', ') ?? '(relevant to topic)'}.
 4. ${purposeNote}
 5. Never open with clichés like "Trong thế giới ngày nay..." or generic phrases.
@@ -461,11 +476,12 @@ Scan ALL terms in original_idea. For each term that might be:
 - Something AI commonly misinterprets
 Flag it with: assumed_meaning, why_might_be_wrong, needs_web_search (true/false).
 
-━━━ STEP C — KNOWLEDGE-BASED VERIFICATION ━━━
-For each term with needs_web_search=true, verify using your knowledge:
+━━━ STEP C — KNOWLEDGE-BASED DEEP RESEARCH ━━━
+For each term with needs_web_search=true, act as a "Deep Researcher" cross-referencing with official standards, community forums, and latest 2025 professional/educational regulations:
 - What does it actually mean officially/technically?
-- Was your assumption correct?
-- Why would the user use this exact term?
+- Was your assumption correct? (e.g., check if "trả lời ngắn" refers to the new THPT 2025 structure with Part III bubble-filling rules).
+- Why would the user use this exact term? (Hidden Intent analysis).
+- Extract specific constraints (e.g., negative numbers, column filling rules, rounding rules).
 
 ━━━ STEP D — CLARIFICATION OPTIONS ━━━
 If ANY assumption was wrong (understanding_was_correct=false):
@@ -474,23 +490,23 @@ Each option must clearly reflect a DIFFERENT interpretation/direction grounded i
 
 If all assumptions were correct: set options to [] (skip to ready_for_phase5=true directly).
 
-Return ONLY this JSON (no markdown, no extra text):
+Return ONLY this JSON in VIETNAMESE:
 {
   "step_a": {
     "label": "Phản hồi ban đầu — chưa xác minh",
     "preliminary_answer": {
-      "title": "<draft title>",
-      "outline": ["<point 1>", "<point 2>", "<point 3>"],
-      "current_understanding": "<what AI currently thinks original_idea means>",
+      "title": "<tiêu đề nháp>",
+      "outline": ["<ý chính 1>", "<ý chính 2>", "<ý chính 3>"],
+      "current_understanding": "<AI đang hiểu ý tưởng gốc là gì, phân tích cả câu và từng từ khóa>",
       "confidence": "<0-100%>"
     }
   },
   "step_b": {
     "terms_to_verify": [
       {
-        "term": "<exact term from original_idea>",
-        "assumed_meaning": "<what AI assumes it means>",
-        "why_might_be_wrong": "<reason AI is uncertain>",
+        "term": "<từ chính xác từ ý tưởng gốc>",
+        "assumed_meaning": "<AI giả định từ này nghĩa là gì>",
+        "why_might_be_wrong": "<lý do AI không chắc chắn, phân tích rủi ro hiểu sai tiêu chuẩn ẩn>",
         "needs_web_search": true
       }
     ]
@@ -498,13 +514,14 @@ Return ONLY this JSON (no markdown, no extra text):
   "step_c": {
     "research_results": [
       {
-        "term": "<term>",
-        "what_i_assumed": "<assumption>",
-        "what_is_actually_true": "<verified truth>",
-        "source": "<knowledge source>",
+        "term": "<từ ngữ>",
+        "what_i_assumed": "<giả định ban đầu>",
+        "what_is_actually_true": "<sự thật đã xác minh từ nguồn cộng đồng/web/tiêu chuẩn 2025>",
+        "source": "<nguồn kiến thức chuẩn>",
         "understanding_was_correct": true,
-        "what_changed": "<if wrong: what changed>",
-        "why_user_likely_used_this_term": "<user intent>"
+        "what_changed": "<nếu sai: cái gì đã thay đổi trong định nghĩa/tiêu chuẩn>",
+        "why_user_likely_used_this_term": "<ý định ẩn bên trong đầu vào của người dùng>",
+        "technical_constraints": ["<danh sách các quy định kỹ thuật cụ thể, VD: cấu trúc tô phiếu, cách tính điểm>"]
       }
     ]
   },
@@ -513,14 +530,16 @@ Return ONLY this JSON (no markdown, no extra text):
     "options": [
       {
         "option_id": "R1",
-        "label": "<short label for button>",
-        "what_this_means": "<how content will be shaped if user picks this>",
-        "grounded_in": "<which research finding led to this option>"
+        "label": "<nhãn ngắn cho nút bấm>",
+        "what_this_means": "<nội dung sẽ được định hình thế nào nếu chọn hướng này, nhắc đến tiêu chuẩn chuyên sâu>",
+        "grounded_in": "<kết quả nghiên cứu nào dẫn đến tùy chọn này>"
       }
     ],
     "ready_for_phase5": false
   }
-}`;
+}
+
+IMPORTANT: Responses for title, outline, current_understanding, assumed_meaning, research_results, etc. MUST be in VIETNAMESE.`;
 
   const text = await callGroqText(prompt, 0.6);
   const parsed = extractJson(text);
@@ -566,23 +585,25 @@ Rules:
 - delta_from_step_A must clearly explain how this differs from the unverified draft
 - confidence must be higher than Step A's confidence
 
-Return ONLY this JSON:
+Return ONLY this JSON in VIETNAMESE:
 {
   "step": "E",
-  "confirmed_understanding": "<Now what AI understands original_idea truly means>",
+  "confirmed_understanding": "<Bây giờ AI hiểu ý tưởng gốc thực sự nghĩa là gì>",
   "refined_answer": {
-    "title": "<updated, specific title reflecting user's choice>",
-    "outline": ["<detailed point 1>", "<detailed point 2>", "<detailed point 3>", "<detailed point 4>"],
-    "delta_from_step_A": "<specific differences from the preliminary draft>",
-    "confidence": "<0-100% — must be higher than Step A>"
+    "title": "<tiêu đề cụ thể, đã cập nhật theo lựa chọn của người dùng>",
+    "outline": ["<ý chi tiết 1>", "<ý chi tiết 2>", "<ý chi tiết 3>", "<ý chi tiết 4>"],
+    "delta_from_step_A": "<những điểm khác biệt cụ thể so với bản nháp ban đầu>",
+    "confidence": "<0-100% — phải cao hơn Bước A>"
   },
   "confirmed_signals": {
-    "format_confirmed": "<confirmed content format>",
-    "audience_confirmed": "<confirmed target audience>",
-    "unique_angle": "<the angle chosen by user that makes this content stand out>"
+    "format_confirmed": "<định dạng nội dung đã xác nhận>",
+    "audience_confirmed": "<đối tượng mục tiêu đã xác nhận>",
+    "unique_angle": "<góc nhìn độc đáo người dùng đã chọn giúp nội dung nổi bật>"
   },
   "ready_for_phase5": true
-}`;
+}
+
+IMPORTANT: All values must be in VIETNAMESE.`;
 
   const text = await callGroqText(prompt, 0.65);
   const parsed = extractJson(text);

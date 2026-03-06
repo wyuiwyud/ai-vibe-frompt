@@ -64,7 +64,7 @@ export default function Stage4Output({ prompt, scores, onRegenerate, onContinue,
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 3 }}>Quality Score</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 3 }}>Điểm chất lượng</div>
           <div className="badge badge-gold" style={{ fontSize: 20, fontWeight: 900 }}>{avg}%</div>
         </div>
       </div>
@@ -121,12 +121,12 @@ export default function Stage4Output({ prompt, scores, onRegenerate, onContinue,
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <span style={{ fontSize: 16 }}>🏆</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#ffd700' }}>Prompt Score</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#ffd700' }}>Điểm Prompt</span>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
-              <ScoreBar label="Clarity" value={scores.clarity} color="#00f5ff" />
-              <ScoreBar label="Structure" value={scores.structure} color="#7b2fff" />
-              <ScoreBar label="Creativity" value={scores.creativity} color="#ff00cc" />
+              <ScoreBar label="Độ rõ ràng" value={scores.clarity} color="#00f5ff" />
+              <ScoreBar label="Cấu trúc" value={scores.structure} color="#7b2fff" />
+              <ScoreBar label="Sáng tạo" value={scores.creativity} color="#ff00cc" />
             </div>
           </motion.div>
 

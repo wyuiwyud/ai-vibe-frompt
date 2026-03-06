@@ -21,12 +21,12 @@ interface MetaData {
 
 const DEFAULT_META: MetaData = {
   checks: { role: true, task: true, context: true, example: true, instruction: true },
-  frameworks: ['RTCE+I Framework', 'Chain-of-Thought instruction', 'Self-critique loop'],
+  frameworks: ['RTCE+I Framework', 'Cấu trúc Chain-of-Thought', 'Vòng lặp tự phản biện'],
   suggestions: [
-    'Thêm "Few-shot examples" — cung cấp 1-2 bài mẫu ngắn để AI hiểu chuẩn output',
-    'Áp dụng "Perspective flip" — yêu cầu AI viết 2 góc nhìn đối lập trước khi kết luận',
+    'Thêm "Few-shot examples" — cung cấp 1-2 bài mẫu ngắn để AI hiểu chuẩn đầu ra',
+    'Áp dụng "Perspective flip" — yêu cầu AI viết từ 2 góc nhìn đối lập trước khi kết luận',
   ],
-  summary: 'Prompt này mạnh ở cấu trúc RTCE+I hoàn chỉnh và self-critique loop. Có thể nâng cấp thêm với few-shot examples để tăng độ chính xác output.',
+  summary: 'Prompt này mạnh ở cấu trúc RTCE+I hoàn chỉnh và vòng lặp tự phản biện. Có thể nâng cấp thêm với các ví dụ mẫu để tăng độ chính xác.',
 };
 
 const COMPONENT_LABELS: Record<string, string> = {
@@ -136,7 +136,7 @@ export default function Stage5Review({ prompt, metaReview, scores, onUpgrade, on
           </div>
 
           <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-            📚 Nguồn tham chiếu
+            📚 Nguồn tham khảo
           </div>
           {['OpenAI Cookbook', 'Anthropic Docs', 'LearnPrompting.org', 'PromptingGuide.ai'].map((src, i) => (
             <div key={i} style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 2 }}>• {src}</div>

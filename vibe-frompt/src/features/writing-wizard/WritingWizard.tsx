@@ -26,7 +26,7 @@ export interface Direction {
 export interface WizardState {
   rawInput: string;
   directions: Direction[];
-  detectedSignals: { format: string|null; level: string|null; domain: string; audience: string } | null;
+  detectedSignals: { format: string|null; level: string|null; domain: string; audience: string; hidden_standards?: string[] } | null;
   webTrendsSummary: string;
   chosenDirection: Direction | null;
   purpose: string;
@@ -39,7 +39,7 @@ export interface WizardState {
 
 type Stage = 1 | 2 | 3 | 4 | 5;
 
-const STAGE_LABELS = ['Input', 'Phân tích', 'Làm rõ', 'Prompt', 'Review'];
+const STAGE_LABELS = ['Nhập liệu', 'Phân tích', 'Làm rõ', 'Kết quả', 'Đánh giá'];
 
 function StageProgress({ current }: { current: Stage }) {
   return (
@@ -307,7 +307,7 @@ export default function WritingWizard() {
                   onUpgrade={() => {
                     // Bug #1 fix: build upgraded keywords first, then pass to both updateState and handleGenerate
                     // using the same value — avoids reading stale state.keywords after setState
-                    const upgradedKeywords = state.keywords + ' [Upgraded: Few-shot + Perspective Flip]';
+                    const upgradedKeywords = state.keywords + ' [Đã nâng cấp: Few-shot + Perspective Flip]';
                     updateState({ keywords: upgradedKeywords });
                     handleGenerate(state.purpose, upgradedKeywords);
                   }}
