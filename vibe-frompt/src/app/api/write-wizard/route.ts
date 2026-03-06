@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { callGroqText } from '@/server/ai/aiClient';
+import { callGroqText, callGroqChat } from '@/server/ai/aiClient';
 
 // ────────────────────────────────────────────────────────────
 // VIBE FROMPT — Writing Intelligence Wizard API (v4.0)
@@ -10,16 +10,21 @@ import { callGroqText } from '@/server/ai/aiClient';
 // ────────────────────────────────────────────────────────────
 
 interface WizardBody {
-  action: 'analyze' | 'clarify' | 'clarify_confirm' | 'generate';
+  action: 'analyze' | 'clarify' | 'clarify_confirm' | 'clarify_chat' | 'clarify_reanalysis' | 'stage4_chat' | 'generate';
   rawInput?: string;
   direction?: { name: string; description: string; full_topic?: string; type: string; content_type?: string };
   purpose?: string;
   keywords?: string;
   language?: string;
+  userOverrides?: string; // New for V5
   // clarify_confirm extras
   chosenOptionId?: string;
   chosenOptionLabel?: string;
   clarifyContext?: string; // serialized JSON of step A-D results
+  chatHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  userMessage?: string;
+  context?: string;
+  vibePrompt?: string; // New for Stage 4 Chat
 }
 
 // ─── Shared types ─────────────────────────────────────────────
@@ -59,6 +64,8 @@ export interface PhaseData {
     audience_confirmed: string;
     hidden_standards?: string[];
     technical_constraints?: string[];
+    scenario_identity?: string | null;
+    scenario_blueprint?: string | null;
   };
   phase2_self_check: {
     draft_sample: string;
@@ -153,7 +160,7 @@ Return ONLY this JSON (no markdown, no explanation):
 }
 
 IMPORTANT: All values (name, why_this_direction, audience_fit, description, web_trends_summary, etc.) MUST be in VIETNAMESE.
-Pay special attention to "Hidden Standards" (e.g. if the user says "trả lời ngắn", they might mean the new "Part III" of the THPT 2025 format with specific rounding/filling rules). Detect and flag these!`;
+Pay special attention to "Hidden Standards" (e.g. if the user says "trả lời ngắn" in a Vietnamese exam context, they MUST be treated as requesting the NEW 2025 THPT Exam Part III format with specific rounding, negative number, and bubble-filling rules). Detect and flag these!`;
 
   const text = await callGroqText(prompt, 0.65);
 
@@ -197,7 +204,8 @@ async function generatePrompt(
   direction: { name: string; description: string; full_topic?: string; type: string; content_type?: string },
   purpose: string,
   keywords: string,
-  language: string
+  language: string,
+  context?: string
 ): Promise<{
   prompt: string;
   metaReview: string;
@@ -208,8 +216,8 @@ async function generatePrompt(
   const isVi = language !== 'en';
   const contentType = direction.content_type ?? direction.type ?? 'Blog';
   const fullTopic = direction.full_topic ?? `${rawInput} — ${direction.name}`;
+  let phaseData: PhaseData | undefined;
 
-  // ── GROQ CALL 1: Phase 1 + 2 + 3 (analysis pipeline) ──────
   const analysisPrompt = `You are an intelligent content analysis engine (Stage 3).
 Analyze the original idea through 3 phases. Return ONLY valid JSON — no markdown, no commentary.
 
@@ -272,14 +280,98 @@ Return ONLY this JSON in VIETNAMESE:
 
 IMPORTANT: EVERY FIELD MUST BE IN VIETNAMESE.`;
 
-  let phaseData: PhaseData | undefined;
-  const analysisText = await callGroqText(analysisPrompt, 0.55);
-  const parsedAnalysis = extractJson(analysisText);
-  if (parsedAnalysis && parsedAnalysis.phase1_signals && parsedAnalysis.phase2_self_check && parsedAnalysis.phase3_enrichment) {
-    phaseData = parsedAnalysis;
+  // ── GROQ CALL 1: Phase 1 + 2 + 3 (analysis pipeline) ──────
+  // If we have context from Stage 3, use it!
+  if (context) {
+    try {
+      const ctx = JSON.parse(context);
+      // Case 1: Step E (ConfirmData)
+      if (ctx.step === 'E') {
+        const conf = ctx as any;
+        const confSignals = conf.confirmed_signals;
+        phaseData = {
+          phase1_signals: {
+            detected_tokens: [],
+            format_confirmed: confSignals?.format_confirmed || contentType,
+            level_confirmed: null,
+            domain_confirmed: 'Xác nhận từ người dùng',
+            audience_confirmed: confSignals?.audience_confirmed || 'Người dùng Việt Nam',
+            hidden_standards: conf.hidden_standards || [],
+            technical_constraints: conf.technical_constraints || [],
+            scenario_identity: confSignals?.selected_scenario_lens?.identity || null,
+            scenario_blueprint: confSignals?.selected_scenario_lens?.blueprint || null
+          },
+          phase2_self_check: {
+            draft_sample: conf.refined_answer?.outline?.join('\n') || '',
+            format_check: 'pass', level_check: 'pass', accuracy_check: 'pass',
+            confidence_score: parseInt(conf.refined_answer?.confidence || '90'),
+            gaps_detected: []
+          },
+          phase3_enrichment: {
+            trend_direction: 'stable', content_gap: '', best_platform: '', rising_related_keywords: [],
+            competitor_content_summary: '', recommended_angle: confSignals?.unique_angle || ''
+          }
+        };
+      }
+      // Case 3: ClarifyData (Steps A-D)
+      else if (ctx.step_a) {
+        const research = ctx.step_c?.research_results || [];
+        const hiddenStandards: string[] = [];
+        const allConstraints: string[] = [];
+        
+        research.forEach((r: any) => {
+          if (r.user_manual_override) {
+            allConstraints.push(`[USER OVERRIDE for ${r.term}]: ${r.user_manual_override}`);
+          } else if (r.user_selected_lens_index !== undefined) {
+            const lens = r.micro_lenses[r.user_selected_lens_index];
+            if (lens) {
+              hiddenStandards.push(`${r.term} (${lens.label}): ${lens.description}`);
+              if (lens.technical_constraints) allConstraints.push(...lens.technical_constraints);
+            }
+          } else {
+            // Fallback for non-V4 data or no selection
+            const lens = r.micro_lenses?.[0];
+            if (lens) {
+               hiddenStandards.push(`${r.term}: ${lens.description}`);
+               if (lens.technical_constraints) allConstraints.push(...lens.technical_constraints);
+            }
+          }
+        });
+
+        phaseData = {
+          phase1_signals: {
+            detected_tokens: [],
+            format_confirmed: contentType,
+            level_confirmed: null,
+            domain_confirmed: 'Phân tích từ vựng vi mô',
+            audience_confirmed: 'Người dùng Việt Nam',
+            hidden_standards: hiddenStandards,
+            technical_constraints: allConstraints
+          },
+          phase2_self_check: {
+            draft_sample: ctx.step_a?.preliminary_answer?.outline?.join('\n') || '',
+            format_check: 'pass', level_check: 'pass', accuracy_check: 'pass',
+            confidence_score: 80, gaps_detected: []
+          },
+          phase3_enrichment: {
+            trend_direction: 'rising', content_gap: '', best_platform: '', rising_related_keywords: [],
+            competitor_content_summary: '', recommended_angle: ''
+          }
+        };
+      }
+    } catch (err) {
+      console.error('[generatePrompt] Context parse error', err);
+    }
   }
 
-  // ── GROQ CALL 2: Phase 4 — Deep Prompt Generation ──────────
+  if (!phaseData) {
+    const analysisText = await callGroqText(analysisPrompt, 0.55);
+    const parsedAnalysis = extractJson(analysisText);
+    if (parsedAnalysis && parsedAnalysis.phase1_signals && parsedAnalysis.phase2_self_check && parsedAnalysis.phase3_enrichment) {
+      phaseData = parsedAnalysis;
+    }
+  }
+
   const p1 = phaseData?.phase1_signals;
   const p2 = phaseData?.phase2_self_check;
   const p3 = phaseData?.phase3_enrichment;
@@ -303,21 +395,25 @@ CONFIRMED ANALYSIS (from Phase 1–3):
 - Target audience: ${p1?.audience_confirmed ?? 'Vietnamese readers'}
 - Content type: ${contentType}
 - Goal: ${purpose || 'Brand Authority'}
+- Selected Scenario Identity: ${p1?.scenario_identity || 'Senior Expert'}
+- Selected Blueprint: ${p1?.scenario_blueprint || 'Standard Professional Structure'}
 - Output language: ${lang}${keywords ? `\n- User keywords/brand: ${keywords}` : ''}${p2?.gaps_detected?.length ? `\n- Known gaps to address: ${p2.gaps_detected.join(', ')}` : ''}${p3?.content_gap ? `\n- Content gap opportunity: ${p3.content_gap}` : ''}${p3?.recommended_angle ? `\n- Recommended unique angle: ${p3.recommended_angle}` : ''}${p3?.best_platform ? `\n- Best platform: ${p3.best_platform}` : ''}${p3?.rising_related_keywords?.length ? `\n- Rising related keywords: ${p3.rising_related_keywords.join(', ')}` : ''}
 
 Generate ONE complete master writing prompt in ${lang} using this EXACT structure:
 
 [ROLE]
-Define an ultra-specific expert role (domain + years + specific specialty). Match confirmed domain "${p1?.domain_confirmed ?? contentType}".
+Define an ultra-specific expert role: "${p1?.scenario_identity || `Domain Expert in ${p1?.domain_confirmed ?? contentType}`}".
+${p1?.scenario_identity ? `Act STRICTLY as this persona: ${p1.scenario_identity}.` : ''}
 
 [TASK]
 Precise task: content type = "${p1?.format_confirmed ?? contentType}", topic = "${fullTopic}", goal = ${purpose}.
+Blueprint to follow: "${p1?.scenario_blueprint || 'Standard structure'}".
 Include the unique angle: ${p3?.recommended_angle ?? 'authoritative, differentiated perspective'}.
 
 [CONTEXT]
-• Target audience: ${p1?.audience_confirmed ?? 'Vietnamese readers interested in the topic'}
 • Hidden Standards detected: ${p1?.hidden_standards?.join(', ') || 'None identified'}
-• Technical Constraints: ${p1?.technical_constraints?.join(', ') || 'Follow best practices'}
+• Technical Constraints & User Commands: 
+${p1?.technical_constraints?.map(c => `  - ${c}`).join('\n') || '  - Follow best practices'}
 • Publishing platform: ${p3?.best_platform ?? 'Website / LinkedIn'}
 • Tone: [specific tone matching audience "${p1?.audience_confirmed}" and goal "${purpose}"]
 • Format: [exact structure for confirmed format type "${p1?.format_confirmed ?? contentType}"]
@@ -336,14 +432,14 @@ Structure:
   → Closing: [CTA / conclusion aligned with ${purpose}]
 
 [INSTRUCTION — NON-NEGOTIABLE]
-1. ${p1?.format_confirmed ? `Strictly follow "${p1.format_confirmed}" format — do not mix with other formats.` : 'Follow the confirmed content format precisely.'}
+1. Strictly follow "${p1?.format_confirmed ?? contentType}" format — do not mix with other formats.
 2. Strictly adhere to these Hidden Standards: ${p1?.hidden_standards?.join('; ') || 'Standard professional quality'}.
-3. Implement these Technical Constraints EXACTLY: ${p1?.technical_constraints?.join('; ') || 'Standard formatting'}.
+3. Implement these Technical Constraints & User Commands EXACTLY: ${p1?.technical_constraints?.map(c => `[CRITICAL] ${c}`).join('; ') || 'Standard formatting'}.
 4. Address these gaps explicitly: ${p2?.gaps_detected?.join('; ') ?? 'maintain depth and specificity'}.
-3. Leverage rising keywords naturally: ${p3?.rising_related_keywords?.join(', ') ?? '(relevant to topic)'}.
-4. ${purposeNote}
-5. Never open with clichés like "Trong thế giới ngày nay..." or generic phrases.
-6. ${p3?.recommended_angle ? `Unique angle to maintain throughout: ${p3.recommended_angle}` : 'Maintain a unique, differentiated perspective.'}
+5. ${purposeNote}
+6. Leverage rising keywords naturally: ${p3?.rising_related_keywords?.join(', ') ?? '(relevant to topic)'}.
+7. Never open with clichés like "Trong thế giới ngày nay..." or generic phrases.
+8. ${p3?.recommended_angle ? `Unique angle to maintain throughout: ${p3.recommended_angle}` : 'Maintain a unique, differentiated perspective.'}
 
 [ITERATE — SELF-CHECK LOOP]
 After the first draft:
@@ -448,7 +544,8 @@ async function runClarify(
   contentType: string,
   goal: string,
   keywords: string,
-  language: string
+  language: string,
+  userOverrides?: string
 ): Promise<object> {
   const lang = language === 'en' ? 'English' : 'Tiếng Việt';
 
@@ -463,32 +560,48 @@ INPUTS:
 - optimization_goal: "${goal || 'Brand Authority'}"
 - custom_keywords: "${keywords || 'none'}"
 - output_language: "${lang}"
+- user_manual_interference: "${userOverrides || 'none'}"
+
+━━━ CRITICAL CONSTRAINT ━━━
+If the original_idea contains a clear "Format Signal" (e.g., "bài tập", "10 câu hỏi", "lesson plan"), ALL scenarios in STEP D MUST be variations of that EXACT format. 
+Example: If user asks for "exercises", Scenario 1, 2, and 3 MUST be different types of exercises. DO NOT suggest "viral content" or "blog posts" if the format is "exercises".
+
+If user_manual_interference is provided, it is a NON-NEGOTIABLE command. Recalibrate Step B, C, and D based on this interference immediately.
 
 ━━━ STEP A — PRELIMINARY ANSWER (unverified) ━━━
 Generate an immediate preliminary title and outline based on current understanding.
 Label it clearly as unverified. State your current_understanding and confidence (0-100%).
 
-━━━ STEP B — SELF-DOUBT ━━━
-Scan ALL terms in original_idea. For each term that might be:
-- A specialized jargon / technical term
-- An official format standard (e.g., "dạng câu trả lời ngắn" = THPT short-answer format)
-- A policy/org/domain-specific term
+━━━ STEP B — KEYWORD & SENTENCE DEEP ANALYSIS ━━━
+Analyze EACH keyword and the ENTIRE sentence structure for hidden professional or academic context. For each term that might be:
+- A specialized jargon / technical term (e.g., "ăn mòn kim loại")
+- An official format standard (e.g., "trả lời ngắn" = NEW 2025 THPT Exam Part III format)
+- A community-shared prompt pattern (e.g., "RTCE", "AIDA")
 - Something AI commonly misinterprets
-Flag it with: assumed_meaning, why_might_be_wrong, needs_web_search (true/false).
+Flag it with: assumed_meaning, why_might_be_wrong, needs_web_search=true.
 
-━━━ STEP C — KNOWLEDGE-BASED DEEP RESEARCH ━━━
-For each term with needs_web_search=true, act as a "Deep Researcher" cross-referencing with official standards, community forums, and latest 2025 professional/educational regulations:
-- What does it actually mean officially/technically?
-- Was your assumption correct? (e.g., check if "trả lời ngắn" refers to the new THPT 2025 structure with Part III bubble-filling rules).
-- Why would the user use this exact term? (Hidden Intent analysis).
-- Extract specific constraints (e.g., negative numbers, column filling rules, rounding rules).
+━━━ STEP C — CROSS-WEB & COMMUNITY SEARCH SIMULATION ━━━
+For each term with needs_web_search=true, act as a "Consultant" cross-referencing with official 2025 standards and professional prompt engineering communities:
+- What does it actually mean officially/technically? (e.g., check if "ăn mòn kim loại" in a "trả lời ngắn" exam context refers to the specific Part III scoring format of the new 2025 THPT Exam).
+- Was your assumption correct? (Identify specific academic or industry standard versions).
+- Why would the user use this exact term? (Hidden Intent analysis — look for unspoken exam patterns or professional requirements).
+- Extract EXACT technical constraints (e.g., scoring rules, character limits, bubble-filling requirements like "tô từ trái sang phải, bỏ trống ô phải").
+- Identify the most effective Community Prompt Pattern (e.g., "Use RTCE Framework for this specific educational task").
 
-━━━ STEP D — CLARIFICATION OPTIONS ━━━
-If ANY assumption was wrong (understanding_was_correct=false):
-Generate 2-4 clickable option buttons for the user to choose their actual intent.
-Each option must clearly reflect a DIFFERENT interpretation/direction grounded in the research.
+━━━ STEP D — ULTRA DEEP DISCOVERY SCENARIOS ━━━
+If you find that the user's intent could be interpreted in multiple professional or academic ways, generate 3 DISTINCT "Scenario Lenses".
 
-If all assumptions were correct: set options to [] (skip to ready_for_phase5=true directly).
+🚨 FORMAT STICKINESS ENFORCEMENT 🚨
+If the original_idea OR content_type implies a SPECIFIC FORMAT (e.g., "10 câu hỏi", "bài tập", "bài test", "đề thi"), ALL 3 scenarios MUST BE variations of that EXACT format.
+- DO NOT suggest "Bài viết Viral", "Blog", or "Storytelling" if the user asked for exercises/tests.
+- Instead, suggest variations like: "Đề thi chuẩn cấu trúc 2025", "Bài tập nâng cao Olympic", "Bài kiểm tra đánh giá năng lực cơ bản".
+
+Each lens must include:
+- A specific Expert Identity (who is writing this?)
+- The specific Data/Standards it forces (what rules does it follow?)
+- The best Prompt Blueprint it will use (e.g., RTCE, AIDA, Step-by-Step, Academic Thesis structure).
+
+If all assumptions were consistent with only one scenario: generate 3 variations of that scenario with different depth levels.
 
 Return ONLY this JSON in VIETNAMESE:
 {
@@ -497,7 +610,7 @@ Return ONLY this JSON in VIETNAMESE:
     "preliminary_answer": {
       "title": "<tiêu đề nháp>",
       "outline": ["<ý chính 1>", "<ý chính 2>", "<ý chính 3>"],
-      "current_understanding": "<AI đang hiểu ý tưởng gốc là gì, phân tích cả câu và từng từ khóa>",
+      "current_understanding": "<AI đang phân tích cả câu và phát hiện các tầng nghĩa ẩn bên dưới từ khóa>",
       "confidence": "<0-100%>"
     }
   },
@@ -506,7 +619,7 @@ Return ONLY this JSON in VIETNAMESE:
       {
         "term": "<từ chính xác từ ý tưởng gốc>",
         "assumed_meaning": "<AI giả định từ này nghĩa là gì>",
-        "why_might_be_wrong": "<lý do AI không chắc chắn, phân tích rủi ro hiểu sai tiêu chuẩn ẩn>",
+        "why_might_be_wrong": "<rủi ro hiểu sai lăng kính dữ liệu người dùng cần>",
         "needs_web_search": true
       }
     ]
@@ -514,28 +627,55 @@ Return ONLY this JSON in VIETNAMESE:
   "step_c": {
     "research_results": [
       {
-        "term": "<từ ngữ>",
-        "what_i_assumed": "<giả định ban đầu>",
-        "what_is_actually_true": "<sự thật đã xác minh từ nguồn cộng đồng/web/tiêu chuẩn 2025>",
-        "source": "<nguồn kiến thức chuẩn>",
-        "understanding_was_correct": true,
-        "what_changed": "<nếu sai: cái gì đã thay đổi trong định nghĩa/tiêu chuẩn>",
-        "why_user_likely_used_this_term": "<ý định ẩn bên trong đầu vào của người dùng>",
-        "technical_constraints": ["<danh sách các quy định kỹ thuật cụ thể, VD: cấu trúc tô phiếu, cách tính điểm>"]
+        "term": "<từ khoá>",
+        "micro_lenses": [
+          {
+            "label": "<Tên lăng kính dữ liệu 1>",
+            "description": "<mô tả chuyên sâu về kịch bản này>",
+            "is_trend": <true/false>,
+            "technical_constraints": ["<ràng buộc 1>", "<ràng buộc 2>"]
+          },
+          {
+            "label": "<Tên lăng kính dữ liệu 2>",
+            "description": "<mô tả kịch bản khác>",
+            "is_trend": <true/false>,
+            "technical_constraints": []
+          }
+        ],
+        "source": "<nguồn dữ liệu mô phỏng>"
       }
     ]
   },
   "step_d": {
-    "has_corrections": false,
+    "has_corrections": true,
     "options": [
       {
-        "option_id": "R1",
-        "label": "<nhãn ngắn cho nút bấm>",
-        "what_this_means": "<nội dung sẽ được định hình thế nào nếu chọn hướng này, nhắc đến tiêu chuẩn chuyên sâu>",
-        "grounded_in": "<kết quả nghiên cứu nào dẫn đến tùy chọn này>"
+        "option_id": "Scenario_1",
+        "label": "<Tên chuyên môn 1 (Phải tuân thủ tuyệt đối định dạng yêu cầu)>",
+        "identity": "<Danh tính chuyên gia 1 (vd: Chuyên gia ra đề, Kỹ sư trưởng...)>",
+        "what_this_means": "<Kịch bản cụ thể 1>",
+        "blueprint": "<Cấu trúc Prompt tối ưu cho kịch bản 1>",
+        "grounded_in": "<Nguồn dữ liệu phân tích>"
+      },
+      {
+        "option_id": "Scenario_2",
+        "label": "<Tên chuyên môn 2 (Phải tuân thủ tuyệt đối định dạng yêu cầu)>",
+        "identity": "<Danh tính chuyên gia 2>",
+        "what_this_means": "<Kịch bản cụ thể 2>",
+        "blueprint": "<Cấu trúc Prompt tối ưu cho kịch bản 2>",
+        "grounded_in": "<Nguồn dữ liệu phân tích>"
+      },
+      {
+        "option_id": "Scenario_3",
+        "label": "<Tên chuyên môn 3 (Phải tuân thủ tuyệt đối định dạng yêu cầu)>",
+        "identity": "<Danh tính chuyên gia 3>",
+        "what_this_means": "<Kịch bản cụ thể 3>",
+        "blueprint": "<Cấu trúc Prompt tối ưu cho kịch bản 3>",
+        "grounded_in": "<Nguồn dữ liệu phân tích>"
       }
     ],
-    "ready_for_phase5": false
+    "ready_for_phase5": false,
+    "community_pattern": "<Đề xuất định dạng/cấu trúc chung nhất từ cộng đồng>"
   }
 }
 
@@ -598,7 +738,11 @@ Return ONLY this JSON in VIETNAMESE:
   "confirmed_signals": {
     "format_confirmed": "<định dạng nội dung đã xác nhận>",
     "audience_confirmed": "<đối tượng mục tiêu đã xác nhận>",
-    "unique_angle": "<góc nhìn độc đáo người dùng đã chọn giúp nội dung nổi bật>"
+    "unique_angle": "<góc nhìn độc đáo người dùng đã chọn giúp nội dung nổi bật>",
+    "selected_scenario_lens": {
+      "identity": "<danh tính chuyên gia>",
+      "blueprint": "<cấu trúc prompt đã chọn>"
+    }
   },
   "ready_for_phase5": true
 }
@@ -619,7 +763,75 @@ IMPORTANT: All values must be in VIETNAMESE.`;
   }
   return parsed;
 }
+ 
+// ─── Stage 3: Chat Interactively with AI for refinement ──────
+async function runClarifyChat(
+  rawInput: string,
+  clarifyContext: string,
+  chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userMessage: string,
+  language: string
+): Promise<object> {
+  const lang = language === 'en' ? 'English' : 'Tiếng Việt';
+  
+  const prompt = `You are the Interactive Clarification Assistant (Stage 3). Your goal is to help the user refine their content plan through conversation.
+ 
+CONTEXT:
+- Original idea: "${rawInput}"
+- Current Clarification State: ${clarifyContext}
+- Chat History: ${JSON.stringify(chatHistory)}
+ 
+USER'S NEW MESSAGE: "${userMessage}"
+ 
+INSTRUCTIONS:
+1. Be helpful, professional, and ultra-knowledgeable about the detected standards (e.g. 2025 THPT exam) or community patterns.
+2. If the user asks for more information or clarification on the AI's research, provide it.
+3. If the user wants to change something about the plan, acknowledge it and explain how it will affect the final prompt.
+4. Keep the original idea SACRED.
+5. Answer in ${lang}.
+ 
+Return ONLY JSON:
+{
+  "assistant_response": "<phản hồi của AI trợ lý bằng tiếng Việt>",
+  "refined_signal_detected": "<nếu có sự thay đổi lớn về định hướng, hãy tóm tắt ở đây, nếu không thì để null>",
+  "is_ready_to_finish": false
+}`;
+ 
+  const text = await callGroqText(prompt, 0.7);
+  const parsed = extractJson(text);
+  return parsed || { assistant_response: "Tôi có thể giúp gì thêm cho bạn trong việc tinh chỉnh nội dung này?", refined_signal_detected: null, is_ready_to_finish: false };
+}
 
+// ─── Stage 4: Integrated AI Assistant (Chatbot) ──────────────
+async function runStage4Chat(
+  vibePrompt: string,
+  chatHistory: Array<{ role: 'user' | 'assistant'; content: string }>,
+  userMessage: string,
+  language: string
+): Promise<object> {
+  const lang = language === 'en' ? 'English' : 'Tiếng Việt';
+  
+  const prompt = `You are an absolute Expert embodied by the following system instructions (VIBE Prompt). 
+Your ONLY personality, rules, exact tone, styles, and constraints are defined by this VIBE Prompt below.
+
+--- THE VIBE PROMPT (YOUR EXPERT SYSTEM PROMPT) ---
+${vibePrompt}
+---------------------------------------------------
+
+CHAT CONTEXT:
+Chat History: ${JSON.stringify(chatHistory)}
+User's New Message: "${userMessage}"
+
+INSTRUCTIONS:
+1. You MUST act exactly as the expert described in the VIBE Prompt.
+2. If the user asks you to "write", "draft", or "generate" content, DO IT immediately, applying all rules, hidden standards (like 2025 exams), and constraints found in the VIBE prompt.
+3. Format your response beautifully in Markdown. Do NOT output JSON. Just output the raw Markdown response.
+4. Answer in ${lang}.`;
+
+  const text = await callGroqChat(prompt, 0.7);
+  return { assistant_response: text || "Hệ thống đang bận, vui lòng thử lại sau." };
+}
+ 
 // ─── Helper: Robust JSON Extraction ──────────────────────────
 function extractJson(text: string) {
   try {
@@ -665,7 +877,24 @@ export async function POST(req: NextRequest) {
         body.direction.content_type ?? body.direction.type ?? 'Blog',
         body.purpose ?? 'Brand Authority',
         body.keywords ?? '',
-        body.language ?? 'vi'
+        body.language ?? 'vi',
+        body.userOverrides // New for V5
+      );
+      return Response.json(result, { status: 200 });
+    }
+
+    if (body.action === 'clarify_reanalysis') {
+      if (!body.rawInput || !body.direction) {
+        return Response.json({ error: 'Missing rawInput or direction' }, { status: 400 });
+      }
+      const result = await runClarify(
+        body.rawInput,
+        body.direction.full_topic ?? `${body.rawInput} — ${body.direction.name}`,
+        body.direction.content_type ?? body.direction.type ?? 'Blog',
+        body.purpose ?? 'Brand Authority',
+        body.keywords ?? '',
+        body.language ?? 'vi',
+        body.userOverrides
       );
       return Response.json(result, { status: 200 });
     }
@@ -685,6 +914,33 @@ export async function POST(req: NextRequest) {
       return Response.json(result, { status: 200 });
     }
 
+    if (body.action === 'clarify_chat') {
+      if (!body.rawInput || !body.userMessage) {
+        return Response.json({ error: 'Missing rawInput or userMessage' }, { status: 400 });
+      }
+      const result = await runClarifyChat(
+        body.rawInput,
+        body.clarifyContext ?? '{}',
+        body.chatHistory ?? [],
+        body.userMessage,
+        body.language ?? 'vi'
+      );
+      return Response.json(result, { status: 200 });
+    }
+
+    if (body.action === 'stage4_chat') {
+      if (!body.vibePrompt || !body.userMessage) {
+        return Response.json({ error: 'Missing vibePrompt or userMessage' }, { status: 400 });
+      }
+      const result = await runStage4Chat(
+        body.vibePrompt,
+        body.chatHistory ?? [],
+        body.userMessage,
+        body.language ?? 'vi'
+      );
+      return Response.json(result, { status: 200 });
+    }
+
     if (body.action === 'generate') {
       if (!body.rawInput || !body.direction) {
         return Response.json({ error: 'Missing rawInput or direction' }, { status: 400 });
@@ -694,7 +950,8 @@ export async function POST(req: NextRequest) {
         body.direction,
         body.purpose ?? 'Brand Authority',
         body.keywords ?? '',
-        body.language ?? 'vi'
+        body.language ?? 'vi',
+        body.context
       );
       return Response.json(result, { status: 200 });
     }

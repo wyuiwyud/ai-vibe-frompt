@@ -55,8 +55,71 @@ async function callGroq(systemPrompt: string, temperature = 0.8): Promise<string
   return '';
 }
 
+// Special Groq caller for Chatbot (forces smaller model to avoid free-tier TPM limits)
+export async function callGroqChat(systemPrompt: string, temperature = 0.7): Promise<string> {
+  if (!GROQ_API_KEY) return '';
+  const model = 'llama-3.1-8b-instant';
+  try {
+    const res = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: systemPrompt }], temperature, max_tokens: 2048 }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return (data?.choices?.[0]?.message?.content ?? '').trim();
+  } catch (e) {
+    console.error(`[GroqChat] ${model} exception:`, e);
+    return '';
+  }
+}
+
 // Export for use in API routes
 export const callGroqText = callGroq;
+// ─── Gemini LLM (High rate limits, large context) ───────────────────────────
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+export async function callGeminiText(systemPrompt: string, temperature = 0.7): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    console.log('[Gemini] No API key');
+    return '';
+  }
+
+  // Use gemini-2.0-flash for speed and reliability, fallback to 1.5-flash
+  const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+
+  for (const model of MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemPrompt }] }],
+          generationConfig: { temperature, maxOutputTokens: 2048 },
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        console.error(`[Gemini] ${model} failed ${res.status}: ${err.slice(0, 200)}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      if (text) {
+        console.log(`[Gemini] ✅ ${model} OK (${text.length} chars)`);
+        return text;
+      }
+    } catch (e) {
+      console.error(`[Gemini] ${model} exception:`, e);
+    }
+  }
+
+  console.error('[Gemini] All models failed. Returning empty.');
+  return '';
+}
 
 // ─── Landing Builder AI ─────────────────────────────────────────────────────
 

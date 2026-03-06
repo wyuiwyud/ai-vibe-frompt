@@ -11,21 +11,26 @@ interface TermToVerify {
   why_might_be_wrong: string;
   needs_web_search: boolean;
 }
+interface MicroLens {
+  label: string;
+  description: string;
+  is_trend: boolean;
+  technical_constraints: string[];
+}
 interface ResearchResult {
   term: string;
-  what_i_assumed: string;
-  what_is_actually_true: string;
+  micro_lenses: MicroLens[];
   source: string;
-  understanding_was_correct: boolean;
-  what_changed: string;
-  why_user_likely_used_this_term: string;
-  technical_constraints?: string[];
+  user_selected_lens_index?: number;
+  user_manual_override?: string;
 }
 interface ClarifyOption {
   option_id: string;
   label: string;
   what_this_means: string;
   grounded_in: string;
+  identity?: string;
+  blueprint?: string;
 }
 interface ClarifyData {
   step_a?: {
@@ -43,6 +48,7 @@ interface ClarifyData {
     has_corrections: boolean;
     options: ClarifyOption[];
     ready_for_phase5: boolean;
+    community_pattern?: string;
   };
 }
 interface ConfirmData {
@@ -61,6 +67,10 @@ interface ConfirmData {
   };
   ready_for_phase5: boolean;
 }
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 interface Stage3ClarifyProps {
   rawInput: string;
@@ -72,10 +82,10 @@ interface Stage3ClarifyProps {
 
 // ─── Helpers ─────────────────────────────────────────────────
 const PURPOSES = [
-  { id: 'SEO & Traffic', label: '🔍 SEO & Traffic', color: '#00f5ff' },
+  { id: 'SEO & Traffic', label: '🔍 SEO & Tìm kiếm', color: '#00f5ff' },
   { id: 'Viral / Tương tác', label: '🔥 Viral / Tương tác', color: '#ff6633' },
   { id: 'Uy tín thương hiệu', label: '🏆 Uy tín thương hiệu', color: '#ffd700' },
-  { id: 'Doanh số & Leads', label: '💰 Doanh số & Leads', color: '#7b2fff' },
+  { id: 'Chuyển đổi (Sales/Lead)', label: '💰 Chuyển đổi (Sales)', color: '#7b2fff' },
 ];
 
 const OPTION_COLORS = ['#00f5ff', '#7b2fff', '#ff00cc', '#ffd700'];
@@ -127,6 +137,18 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
   const [keywords, setKeywords] = useState('');
   const [readyForGenerate, setReadyForGenerate] = useState(false);
 
+  // Chat state
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [userMsg, setUserMsg] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Micro-Discovery State
+  const [selectedLenses, setSelectedLenses] = useState<Record<string, number>>({});
+  const [manualOverrides, setManualOverrides] = useState<Record<string, string>>({});
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [reanalysisStatus, setReanalysisStatus] = useState('');
+
   // Auto-run verification on mount
   const runVerification = useCallback(async () => {
     setVerifyState('loading');
@@ -161,6 +183,7 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
 
   // Step E: run after user picks an option
   const handleOptionSelect = async (option: ClarifyOption) => {
+    if (!clarifyData) return;
     setSelectedOption(option.option_id);
     setVerifyState('confirming');
     try {
@@ -174,7 +197,17 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
           language,
           chosenOptionId: option.option_id,
           chosenOptionLabel: option.label,
-          clarifyContext: JSON.stringify(clarifyData),
+          clarifyContext: JSON.stringify({
+            ...clarifyData,
+            step_c: {
+              ...clarifyData.step_c,
+              research_results: (clarifyData.step_c?.research_results || []).map(r => ({
+                ...r,
+                user_selected_lens_index: selectedLenses[r.term] ?? 0,
+                user_manual_override: manualOverrides[r.term] || undefined
+              }))
+            }
+          }),
         }),
       });
       const data = await res.json() as ConfirmData;
@@ -185,6 +218,76 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
       console.error('[Stage3] clarify_confirm error', e);
       setVerifyState('confirmed');
       setReadyForGenerate(true);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!userMsg.trim() || isChatLoading) return;
+    const newHistory: ChatMessage[] = [...chatHistory, { role: 'user', content: userMsg }];
+    setChatHistory(newHistory);
+    setUserMsg('');
+    setIsChatLoading(true);
+
+    try {
+      const res = await fetch('/api/write-wizard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'clarify_chat',
+          rawInput,
+          clarifyContext: JSON.stringify(clarifyData),
+          chatHistory: newHistory,
+          userMessage: userMsg,
+          language,
+        }),
+      });
+      const data = await res.json();
+      setChatHistory([...newHistory, { role: 'assistant', content: data.assistant_response }]);
+    } catch (e) {
+      console.error('[Stage3] chat error', e);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleManualReverify = async () => {
+    if (isReanalyzing) return;
+    setIsReanalyzing(true);
+    setReanalysisStatus('AI đang hiệu chỉnh dữ liệu theo lệnh của bạn...');
+    
+    // Combine overrides into a single string for prompt injection
+    const overrides = Object.entries(manualOverrides)
+      .filter(([_, val]) => val.trim().length > 0)
+      .map(([key, val]) => `${key}: ${val}`)
+      .join('; ');
+
+    try {
+      const res = await fetch('/api/write-wizard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'clarify_reanalysis',
+          rawInput,
+          direction,
+          purpose,
+          keywords,
+          language,
+          userOverrides: overrides
+        }),
+      });
+      const data = await res.json() as ClarifyData;
+      setClarifyData(prev => ({
+        ...prev,
+        ...data,
+        // Preserve B and C if possible, but D must be updated
+        step_d: data.step_d
+      }));
+      setVerifyState('done');
+    } catch (e) {
+      console.error('[Stage3] reanalysis error', e);
+    } finally {
+      setIsReanalyzing(false);
+      setReanalysisStatus('');
     }
   };
 
@@ -345,68 +448,89 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
               </div>
             )}
 
-            {/* Step C: Research results */}
+            {/* Step C: Micro-Discovery results */}
             {clarifyData.step_c && clarifyData.step_c.research_results.length > 0 && (
               <div style={{
                 background: 'rgba(0,245,255,0.03)', border: '1px solid rgba(0,245,255,0.12)',
                 borderRadius: 14, padding: '14px 18px',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                   <span style={{
                     padding: '2px 10px', borderRadius: 50, fontSize: 10, fontWeight: 700,
                     background: 'rgba(0,245,255,0.08)', color: '#00f5ff', border: '1px solid rgba(0,245,255,0.2)',
                   }}>
-                    🔬 Bước C — Kết quả xác minh
+                    🔬 Bước C — Khám phá Vi mô (Micro-Discovery)
                   </span>
                 </div>
-                <div style={{ display: 'grid', gap: 10 }}>
-                  {clarifyData.step_c.research_results.map((r, i) => (
-                    <div key={i} style={{
-                      padding: '10px 12px', borderRadius: 10,
-                      background: r.understanding_was_correct ? 'rgba(0,255,100,0.05)' : 'rgba(255,100,0,0.06)',
-                      border: `1px solid ${r.understanding_was_correct ? 'rgba(0,255,100,0.15)' : 'rgba(255,100,0,0.2)'}`,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <span style={{ fontSize: 12 }}>{r.understanding_was_correct ? '✅' : '❌'}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: r.understanding_was_correct ? '#00ff64' : '#ff6433' }}>
-                          "{r.term}"
+                
+                <div style={{ display: 'grid', gap: 16 }}>
+                  {clarifyData.step_c.research_results.map((res, i) => (
+                    <motion.div
+                      key={i}
+                      style={{
+                        padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00f5ff', boxShadow: '0 0 10px #00f5ff' }} />
+                        <span style={{ fontSize: 12, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          TỪ KHOÁ: "{res.term}"
                         </span>
                       </div>
-                      {!r.understanding_was_correct && (
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
-                          <span style={{ color: 'rgba(255,255,255,0.35)' }}>Thực tế: </span>
-                          {r.what_is_actually_true}
-                          {r.what_changed && (
-                            <div style={{ marginTop: 4, color: 'rgba(255,150,50,0.8)' }}>→ {r.what_changed}</div>
-                          )}
-                        </div>
-                      )}
-                      {r.understanding_was_correct && (
-                        <div style={{ fontSize: 11, color: 'rgba(0,255,100,0.6)', marginBottom: 6 }}>
-                          {r.why_user_likely_used_this_term}
-                        </div>
-                      )}
-                      
-                      {/* Deep Research Details */}
-                      <div style={{ 
-                        marginTop: 4, padding: '8px 10px', borderRadius: 8, 
-                        background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' 
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.3)' }}>NGUỒN: {r.source}</span>
-                        </div>
-                        {(r as any).technical_constraints && (r as any).technical_constraints.length > 0 && (
-                          <div style={{ marginTop: 4 }}>
-                            { (r as any).technical_constraints.map((c: string, idx: number) => (
-                              <div key={idx} style={{ fontSize: 10, color: '#fff', marginBottom: 2, display: 'flex', gap: 6 }}>
-                                <span style={{ color: '#00f5ff' }}>•</span>
-                                <span>{c}</span>
+
+                      {/* --- Multi-Lens Selector --- */}
+                      <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
+                        {(res.micro_lenses || []).map((lens, idx) => {
+                          const isSelected = (selectedLenses[res.term] ?? 0) === idx;
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => setSelectedLenses(prev => ({ ...prev, [res.term]: idx }))}
+                              style={{
+                                textAlign: 'left', padding: '12px', borderRadius: 12, cursor: 'pointer',
+                                background: isSelected ? 'rgba(0,245,255,0.1)' : 'rgba(255,255,255,0.02)',
+                                border: `1px solid ${isSelected ? '#00f5ff' : 'rgba(255,255,255,0.05)'}`,
+                                transition: 'all 0.2s ease', position: 'relative'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: isSelected ? '#00f5ff' : '#fff' }}>{lens.label}</span>
+                                {lens.is_trend && (
+                                  <span style={{ fontSize: 8, padding: '1px 5px', borderRadius: 6, background: '#ff3366', color: '#fff', fontWeight: 900 }}>TRENDING</span>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                        )}
+                              <div style={{ fontSize: 10, color: isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+                                {lens.description}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                    </div>
+
+                      {/* --- Manual Override --- */}
+                      <div style={{ padding: '12px', borderRadius: 10, background: 'rgba(0,0,0,0.25)', border: '1px dashed rgba(0,245,255,0.2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: 'rgba(0,245,255,0.6)', textTransform: 'uppercase' }}>
+                            CAN THIỆP THỦ CÔNG:
+                          </span>
+                        </div>
+                        <input
+                          value={manualOverrides[res.term] || ''}
+                          onChange={(e) => setManualOverrides(prev => ({ ...prev, [res.term]: e.target.value }))}
+                          onKeyDown={(e) => e.key === 'Enter' && handleManualReverify()}
+                          placeholder="Nhấn Enter để AI phân tích lại..."
+                          style={{
+                            width: '100%', background: 'transparent', border: 'none', color: '#00f5ff',
+                            fontSize: 11, outline: 'none', fontStyle: 'italic'
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ marginTop: 12, fontSize: 8, color: 'rgba(255,255,255,0.15)', fontWeight: 600, textAlign: 'right', textTransform: 'uppercase' }}>
+                        NGUỒN: {res.source}
+                      </div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
@@ -418,9 +542,19 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 style={{
                   background: 'rgba(255,215,0,0.04)', border: '1px solid rgba(255,215,0,0.2)',
-                  borderRadius: 16, padding: '18px 20px',
+                  borderRadius: 16, padding: '18px 20px', position: 'relative'
                 }}
               >
+                {isReanalyzing && (
+                  <div style={{
+                    position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', 
+                    backdropFilter: 'blur(4px)', borderRadius: 16, zIndex: 10,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12
+                  }}>
+                    <Spinner color="#ffd700" />
+                    <span style={{ fontSize: 11, color: '#ffd700', fontWeight: 700 }}>{reanalysisStatus}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <span style={{
                     padding: '2px 10px', borderRadius: 50, fontSize: 10, fontWeight: 700,
@@ -430,41 +564,172 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 14, lineHeight: 1.6 }}>
-                  AI đã xác minh và phát hiện sự khác biệt quan trọng. <strong style={{ color: 'rgba(255,215,0,0.8)' }}>Bạn đang muốn tạo loại nội dung nào?</strong> Chọn một trong các hướng sau:
+                  AI đã truy quét kho dữ liệu cộng đồng và phát hiện sự khác biệt quan trọng. <strong style={{ color: 'rgba(255,215,0,0.8)' }}>Bạn đang muốn tạo loại nội dung nào?</strong>
                 </div>
-                <div style={{ display: 'grid', gap: 10 }}>
+
+                {clarifyData.step_d.community_pattern && (
+                  <div style={{ 
+                    marginBottom: 16, padding: '12px', background: 'rgba(0,245,255,0.08)', 
+                    border: '1px solid rgba(0,245,255,0.2)', borderRadius: 12,
+                    display: 'flex', alignItems: 'center', gap: 10
+                  }}>
+                    <span style={{ fontSize: 18 }}>💡</span>
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 900, color: '#00f5ff', textTransform: 'uppercase' }}>ĐỀ XUẤT CẤU TRÚC TỪ CỘNG ĐỒNG:</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{clarifyData.step_d.community_pattern}</div>
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: 'grid', gap: 14 }}>
                   {clarifyData.step_d.options.map((opt, i) => {
                     const color = OPTION_COLORS[i % OPTION_COLORS.length];
                     return (
                       <motion.button
                         key={opt.option_id}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.01, x: 5 }}
+                        whileTap={{ scale: 0.99 }}
                         onClick={() => handleOptionSelect(opt)}
                         style={{
-                          background: `${color}08`, border: `1px solid ${color}30`,
-                          borderRadius: 12, padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
-                          transition: 'all 0.2s',
+                          textAlign: 'left', padding: '20px', borderRadius: 16,
+                          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                          position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.3s ease',
+                          display: 'flex', flexDirection: 'column', gap: 12
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                          <span style={{
-                            padding: '2px 8px', borderRadius: 50, fontSize: 10, fontWeight: 800,
-                            background: `${color}18`, color, border: `1px solid ${color}33`,
-                          }}>
-                            {opt.option_id}
+                        {/* Selected Scenario Indicator */}
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: color }} />
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <span style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {opt.label}
                           </span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color }}>{opt.label}</span>
+                          <span style={{ 
+                            padding: '4px 10px', borderRadius: 20, background: `${color}11`, 
+                            border: `1px solid ${color}33`, color: color, fontSize: 10, fontWeight: 800 
+                          }}>
+                            LĂNG KÍNH #{i + 1}
+                          </span>
                         </div>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 4 }}>
-                          → {opt.what_this_means}
+
+                        {/* Expert Identity */}
+                        {opt.identity && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ fontSize: 16 }}>👤</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
+                              Dưới danh nghĩa: {opt.identity}
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, paddingLeft: 24 }}>
+                          {opt.what_this_means}
                         </div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>
-                          📎 Dựa trên: {opt.grounded_in}
+
+                        {/* Blueprint Info */}
+                        {opt.blueprint && (
+                          <div style={{ 
+                            marginTop: 4, padding: '10px 14px', borderRadius: 12, 
+                            background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)',
+                            display: 'flex', alignItems: 'center', gap: 10
+                          }}>
+                            <div style={{ width: 6, height: 6, background: color, borderRadius: '50%' }} />
+                            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>
+                              Cấu trúc sử dụng: <span style={{ color: '#fff' }}>{opt.blueprint}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: 600, textTransform: 'uppercase', paddingLeft: 24, marginTop: 4 }}>
+                          Dựa trên: {opt.grounded_in}
                         </div>
                       </motion.button>
                     );
                   })}
+                </div>
+
+                {/* --- CHATBOT ASSISTANT INTEGRATION --- */}
+                <div style={{ marginTop: 24, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg, #7b2fff, #00f5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💬</div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>Hỏi đáp trực tiếp với trợ lý AI</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Cần giải thích thêm về lăng kính hoặc quy tắc?</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setIsChatOpen(!isChatOpen)}
+                      style={{ 
+                        padding: '6px 14px', borderRadius: 50, background: isChatOpen ? 'rgba(255,255,255,0.05)' : 'rgba(0,245,255,0.1)', 
+                        border: '1px solid rgba(0,245,255,0.3)', color: '#00f5ff', fontSize: 10, fontWeight: 800, cursor: 'pointer' 
+                      }}
+                    >
+                      {isChatOpen ? 'THU GỌN' : 'MỞ CHAT'}
+                    </button>
+                  </div>
+
+                  <AnimatePresence>
+                    {isChatOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <div style={{ 
+                          maxHeight: 300, overflowY: 'auto', padding: '16px', 
+                          background: 'rgba(0,0,0,0.2)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)',
+                          display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 12
+                        }}>
+                          {chatHistory.length === 0 && (
+                            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', textAlign: 'center', padding: '20px' }}>
+                              Bạn có thể yêu cầu AI giải thích về quy định tô phiếu 2025 hoặc đề xuất cấu trúc prompt phù hợp nhất...
+                            </div>
+                          )}
+                          {chatHistory.map((msg, i) => (
+                            <div key={i} style={{ 
+                              alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                              maxWidth: '85%', padding: '10px 14px', borderRadius: 14,
+                              background: msg.role === 'user' ? '#7b2fff22' : 'rgba(255,255,255,0.05)',
+                              border: `1px solid ${msg.role === 'user' ? '#7b2fff44' : 'rgba(255,255,255,0.1)'}`,
+                              color: msg.role === 'user' ? '#fff' : 'rgba(255,255,255,0.9)',
+                              fontSize: 12, lineHeight: 1.5
+                            }}>
+                              {msg.content}
+                            </div>
+                          ))}
+                          {isChatLoading && (
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', paddingLeft: 4 }}>
+                              <Spinner color="#00f5ff" />
+                              <div style={{ fontSize: 10, color: '#00f5ff', fontWeight: 600 }}>AI ĐANG SUY NGHĨ...</div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <input 
+                            value={userMsg}
+                            onChange={(e) => setUserMsg(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                            placeholder="Hỏi AI về các quy định hoặc lăng kính..."
+                            style={{ 
+                              flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                              borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#fff', outline: 'none'
+                            }}
+                          />
+                          <button 
+                            onClick={handleSendMessage}
+                            disabled={isChatLoading || !userMsg.trim()}
+                            style={{ 
+                              padding: '0 20px', borderRadius: 12, background: 'linear-gradient(135deg, #7b2fff, #00f5ff)', 
+                              border: 'none', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                              opacity: (isChatLoading || !userMsg.trim()) ? 0.5 : 1
+                            }}
+                          >
+                            GỬI
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             )}
@@ -626,8 +891,32 @@ export default function Stage3Clarify({ rawInput, direction, language = 'vi', on
           whileTap={{ scale: readyForGenerate ? 0.97 : 1 }}
           onClick={() => {
             if (readyForGenerate) {
-              const ctx = confirmData ? JSON.stringify(confirmData) : JSON.stringify(clarifyData ?? {});
-              onGenerate(purpose, keywords, ctx);
+              // Merge results from Step C (micro-discovery) with Step E (confirm) if they exist
+              const researchResults = clarifyData?.step_c?.research_results || [];
+              const hiddenStandards: string[] = [];
+              const allConstraints: string[] = [];
+
+              researchResults.forEach(r => {
+                if (manualOverrides[r.term]) {
+                  allConstraints.push(`[OVERRIDE for ${r.term}]: ${manualOverrides[r.term]}`);
+                } else {
+                  const lensIndex = selectedLenses[r.term] ?? 0;
+                  const lens = r.micro_lenses[lensIndex];
+                  if (lens) {
+                    hiddenStandards.push(`${r.term}: ${lens.description}`);
+                    if (lens.technical_constraints) allConstraints.push(...lens.technical_constraints);
+                  }
+                }
+              });
+
+              const baseCtx = confirmData ? { ...confirmData } : { ...clarifyData };
+              const mergedCtx = {
+                ...baseCtx,
+                hidden_standards: hiddenStandards,
+                technical_constraints: allConstraints,
+              };
+              
+              onGenerate(purpose, keywords, JSON.stringify(mergedCtx));
             }
           }}
           disabled={!readyForGenerate}

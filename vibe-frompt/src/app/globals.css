@@ -28,7 +28,9 @@
   --stellar-gold: #ffd700;
 
   --gradient-galaxy: radial-gradient(circle at center, #0f001f 0%, #0a0018 40%, #030010 100%);
+  --gradient-hero: linear-gradient(135deg, #000000 0%, #030010 30%, #0a0018 60%, #0f001f 100%);
   --gradient-neon: linear-gradient(135deg, var(--stardust-cyan), var(--nebula-purple), var(--nebula-pink));
+  --gradient-border: linear-gradient(135deg, var(--stardust-cyan), var(--nebula-purple), var(--nebula-pink));
   --gradient-border-4d: linear-gradient(135deg, var(--stardust-cyan), var(--nebula-purple), var(--nebula-pink), var(--stellar-gold));
 
   --shadow-4d: 0 0 40px rgba(123, 47, 255, 0.3), 0 0 100px rgba(0, 245, 255, 0.1);
@@ -50,18 +52,21 @@
   padding: 0;
 }
 
-html {
-  scroll-behavior: smooth;
-  overflow-x: hidden;
+html,
+body {
+  min-height: 100vh;
 }
 
 body {
   font-family: var(--font-outfit), sans-serif;
   background: var(--gradient-hero);
   color: var(--c-white);
-  min-height: 100vh;
   overflow-x: hidden;
-  cursor: none;
+}
+
+::selection {
+  background: rgba(0, 245, 255, 0.3);
+  color: #fff;
 }
 
 /* ===== CUSTOM CURSOR ===== */

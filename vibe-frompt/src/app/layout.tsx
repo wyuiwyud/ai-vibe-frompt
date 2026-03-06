@@ -29,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={outfit.variable} suppressHydrationWarning>
-      <body className="font-outfit antialiased" suppressHydrationWarning>
+      <body className="font-outfit antialiased bg-animated" suppressHydrationWarning>
         <GalaxyBackground />
         {children}
       </body>

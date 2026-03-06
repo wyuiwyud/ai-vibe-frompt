@@ -171,7 +171,7 @@ export default function WritingWizard() {
           keywords,
           language: state.language,
           // Pass Stage3's self-verification results to enrich Phase 4 prompt generation
-          ...(confirmedContext ? { clarifyContext: confirmedContext } : {}),
+          ...(confirmedContext ? { context: confirmedContext } : {}),
         }),
       });
       const data = await res.json() as {

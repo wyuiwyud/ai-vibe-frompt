@@ -123,7 +123,7 @@ async function analyzeWithGroqVision(imageBase64: string, mimeType: string): Pro
 IMPORTANT: Respond in Vietnamese.`;
 
     // Try current Groq vision models (2025)
-    const VISION_MODELS = ['llama-4-scout-17b-16e-instruct', 'llama-4-maverick-17b-128e-instruct', 'meta-llama/llama-4-scout-17b-16e-instruct'];
+    const VISION_MODELS = ['llama-3.2-11b-vision-preview', 'llama-3.2-90b-vision-preview'];
 
     for (const model of VISION_MODELS) {
         try {
@@ -188,7 +188,7 @@ Respond in VIETNAMESE in JSON: {"master": "...", "galaxy4d": "...", "cinematic":
                 Authorization: `Bearer ${GROQ_API_KEY}`,
             },
             body: JSON.stringify({
-                model: 'llama-4-scout-17b-16e-instruct',
+                model: 'llama-3.2-11b-vision-preview',
                 messages: [
                     {
                         role: 'user',

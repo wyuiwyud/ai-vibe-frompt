@@ -30,33 +30,35 @@ export async function POST(req: NextRequest) {
     const lang = language === 'en' ? 'English' : 'Tiếng Việt';
     const isVi = language !== 'en';
 
-    const prompt = `Bạn là chuyên gia Content Strategy với kiến thức sâu về thị trường nội dung ${isVi ? 'Việt Nam' : 'quốc tế'}.
+    const prompt = `Bạn là chuyên gia Content Strategy & Prompt Engineering với khả năng thấu cảm ý định người dùng (User Intent) cực tốt.
 
-Người dùng đang gõ ý tưởng viết lách: "${query}"
+Người dùng đang gõ: "${query}"
 
-Nhiệm vụ: Đề xuất ĐÚNG 6 chủ đề/ý tưởng viết lách CỤ THỂ và THỰC TẾ bằng ${lang}.
+NHIỆM VỤ: Đề xuất 6 ý tưởng "tiếp nối" hoặc "nâng cấp" cho ý tưởng trên.
 
-Yêu cầu:
-- Hiểu NGỮ NGHĨA của input, không chỉ match từ
-- Tham chiếu xu hướng thực tế ${isVi ? '(thị trường Việt Nam, Google Trends VN, Facebook insights VN)' : '(Google Trends, HubSpot, Content Marketing Institute)'}
-- Gợi ý đa dạng: từ góc độ khác nhau (phân tích, storytelling, how-to, case study, data-driven...)
-- Mỗi gợi ý: cụ thể, có thể dùng làm title bài viết ngay
-- Độ dài mỗi gợi ý: 6-15 từ
-- Phủ rộng các hướng: B2C, B2B, học thuật, đại chúng
+QUY TẮC BẮT BUỘC:
+1. PHÂN LOẠI Ý ĐỊNH (INTENT):
+   - Nếu người dùng yêu cầu một tác vụ cụ thể (vd: "10 câu hỏi", "lập kế hoạch", "soạn bài"), bạn PHẢI đề xuất các biến thể của tác vụ đó (vd: "10 câu hỏi nâng cao về...", "Bộ câu hỏi trắc nghiệm theo chuẩn 2025 về..."). KHÔNG gợi ý bài viết blog chung chung.
+   - Nếu người dùng đưa ra chủ đề chung, hãy gợi ý các góc độ khai thác độc đáo (Storytelling, Data-driven, Case study).
 
-Trả về ĐÚNG JSON format, KHÔNG có ký tự khác:
+2. BÁM SÁT FORMAT: Đề xuất phải giữ nguyên hoặc nâng cấp "số lượng" hoặc "định dạng" nếu người dùng đã đề cập (vd: giữ nguyên số lượng "10 câu", hoặc đổi từ "trả lời ngắn" sang "trắc nghiệm").
+
+3. HIDDEN STANDARDS (2025):
+   - Nếu liên quan đến giáo dục Việt Nam: Tự động lồng ghép các tiêu chuẩn "Bộ GD&ĐT 2025", "Chương trình mới", "Phần III đề mẫu".
+   - Nếu liên quan đến kỹ thuật: Lồng ghép các tiêu chuẩn ISO, niche standards.
+
+4. XU HƯỚNG: Ưu tiên các từ khóa đang "viral" hoặc có độ phổ biến cao trên mạng xã hội Việt Nam (Facebook, Threads) năm 2025.
+
+TRẢ VỀ JSON:
 {
   "suggestions": [
-    "Gợi ý 1 cụ thể bằng ${lang}",
-    "Gợi ý 2 cụ thể bằng ${lang}",
-    "Gợi ý 3 cụ thể bằng ${lang}",
-    "Gợi ý 4 cụ thể bằng ${lang}",
-    "Gợi ý 5 cụ thể bằng ${lang}",
-    "Gợi ý 6 cụ thể bằng ${lang}"
+    "Gợi ý 1 (cụ thể, bám sát format, đúng chuẩn 2025)",
+    ...
+    "Gợi ý 6"
   ]
 }
 
-CHỈ trả về JSON. KHÔNG có markdown, KHÔNG có giải thích.`;
+Ngôn ngữ: ${lang}. KHÔNG giải thích, CHỈ JSON.`;
 
     const aiText = await callGroqText(prompt, 0.75);
 

@@ -42,9 +42,42 @@ export default function Stage4Output({ prompt, scores, onRegenerate, onContinue,
   const [toast, setToast] = useState('');
   const avg = Math.round((scores.clarity + scores.structure + scores.creativity) / 3);
 
+  // Chatbot State
+  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string}>>([]);
+  const [userMsg, setUserMsg] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   const handleCopy = async () => {
     await copyToClipboard(prompt);
     setToast('✨ Đã copy VIBE Prompt vào clipboard!');
+  };
+
+  const handleSendMessage = async () => {
+    if (!userMsg.trim() || isChatLoading) return;
+    const newHistory = [...chatHistory, { role: 'user' as const, content: userMsg }];
+    setChatHistory(newHistory);
+    setUserMsg('');
+    setIsChatLoading(true);
+
+    try {
+      const res = await fetch('/api/write-wizard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'stage4_chat',
+          vibePrompt: prompt,
+          chatHistory: newHistory,
+          userMessage: userMsg,
+        }),
+      });
+      const data = await res.json();
+      setChatHistory([...newHistory, { role: 'assistant', content: data.assistant_response }]);
+    } catch (e) {
+      console.error('[Stage4] chat error', e);
+    } finally {
+      setIsChatLoading(false);
+    }
   };
 
   return (
@@ -104,6 +137,102 @@ export default function Stage4Output({ prompt, scores, onRegenerate, onContinue,
             >
               ✏️ Chỉnh sửa
             </button>
+          </div>
+
+          {/* --- CHATBOT ASSISTANT INTEGRATION --- */}
+          <div style={{ marginTop: 24, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: 'linear-gradient(135deg, #ff00cc, #00f5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🤖</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>Trợ lý AI Đồng hành</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Tương tác trực tiếp với VIBE Prompt</div>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  if (!isChatOpen && chatHistory.length === 0 && !userMsg) {
+                    setUserMsg('Dựa vào prompt trên, hãy viết cho tôi một bản nháp hoàn chỉnh ngay bây giờ.');
+                  }
+                  setIsChatOpen(!isChatOpen);
+                }}
+                style={{ 
+                  padding: '6px 14px', borderRadius: 50, background: isChatOpen ? 'rgba(255,255,255,0.05)' : 'rgba(0,245,255,0.1)', 
+                  border: '1px solid rgba(0,245,255,0.3)', color: '#00f5ff', fontSize: 10, fontWeight: 800, cursor: 'pointer' 
+                }}
+              >
+                {isChatOpen ? 'THU GỌN' : 'MỞ CHAT'}
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {isChatOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div style={{ 
+                    maxHeight: 400, overflowY: 'auto', padding: '16px', 
+                    background: 'rgba(0,0,0,0.25)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)',
+                    display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 12
+                  }}>
+                    {chatHistory.length === 0 && (
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', textAlign: 'center', padding: '20px' }}>
+                        Khởi động AI hoàn tất. Bạn có thể yêu cầu: "Viết cho tôi 3 câu mở đầu dựa trên prompt trên" hoặc "Hãy đóng vai chuyên gia và trả lời..."
+                      </div>
+                    )}
+                    {chatHistory.map((msg, i) => (
+                      <div key={i} style={{ 
+                        alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                        maxWidth: msg.role === 'user' ? '85%' : '100%', 
+                        padding: msg.role === 'user' ? '12px 16px' : '0px', 
+                        borderRadius: 14,
+                        background: msg.role === 'user' ? '#7b2fff22' : 'transparent',
+                        border: msg.role === 'user' ? '1px solid #7b2fff44' : 'none',
+                        color: msg.role === 'user' ? '#fff' : 'rgba(255,255,255,0.9)',
+                        fontSize: 13, lineHeight: 1.6
+                      }}>
+                        {msg.role === 'assistant' ? (
+                          <div className="prose prose-invert max-w-none" style={{ fontSize: 13, background: 'rgba(0,245,255,0.03)', padding: '16px', borderRadius: 12, border: '1px solid rgba(0,245,255,0.1)' }} dangerouslySetInnerHTML={{ __html: msg.content.replace(/\n(.*)/g, '<br/>$1') }} />
+                        ) : (
+                          msg.content
+                        )}
+                      </div>
+                    ))}
+                    {isChatLoading && (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', paddingLeft: 4 }}>
+                        <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid #00f5ff33', borderTop: '2px solid #00f5ff', animation: 'spin 1s linear infinite' }} />
+                        <div style={{ fontSize: 10, color: '#00f5ff', fontWeight: 600 }}>ĐANG SOẠN THẢO...</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <input 
+                      value={userMsg}
+                      onChange={(e) => setUserMsg(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="vd: Viết 1 phần mở bài, Tạo 3 câu hỏi trắc nghiệm..."
+                      style={{ 
+                        flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 12, padding: '14px 16px', fontSize: 13, color: '#fff', outline: 'none'
+                      }}
+                    />
+                    <button 
+                      onClick={handleSendMessage}
+                      disabled={isChatLoading || !userMsg.trim()}
+                      style={{ 
+                        padding: '0 24px', borderRadius: 12, background: 'linear-gradient(135deg, #ff00cc, #00f5ff)', 
+                        border: 'none', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                        opacity: (isChatLoading || !userMsg.trim()) ? 0.5 : 1
+                      }}
+                    >
+                      GỬI ĐI
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

@@ -350,7 +350,7 @@ export default function VisualInverseEngine() {
                         <span className="text-gradient">Visual Inverse</span> Engine
                     </h2>
                     <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 15, maxWidth: 480, margin: '0 auto' }}>
-                        Upload ảnh → AI bóc tách 4 lớp → Chỉnh sửa → Tái tạo bằng Midjourney/DALL-E
+                        Upload ảnh → AI bóc tách 6 lớp chuyên sâu → Chỉnh sửa → Tái tạo bằng Midjourney/DALL-E
                     </p>
                 </motion.div>
 
