@@ -2,7 +2,7 @@
 // VIBE FROMPT — Prompt Template Engine with RTCE+I
 // ============================================
 
-export type Category = 'writing' | 'coding' | 'image';
+export type Category = 'writing' | 'coding' | 'image' | 'visual-inverse';
 
 export interface FormData {
   category: Category;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 import { useLandingBuilderStore } from '@/store/landingBuilderStore';
 import { cn } from '@/lib/utils';
 import { VisualPlaceholder } from '../components/VisualPlaceholder';

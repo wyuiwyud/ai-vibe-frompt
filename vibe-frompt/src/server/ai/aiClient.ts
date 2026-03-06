@@ -4,11 +4,11 @@ import { buildRtcePrompt } from './prompts';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// Groq models in priority order (fastest + best quality first)
+// Groq models in priority order (2025 current working models)
 const GROQ_MODELS = [
   'llama-3.3-70b-versatile',
-  'llama3-70b-8192',
-  'mixtral-8x7b-32768',
+  'llama-3.1-70b-versatile',
+  'llama-3.1-8b-instant',
 ];
 
 async function callGroq(systemPrompt: string, temperature = 0.8): Promise<string> {

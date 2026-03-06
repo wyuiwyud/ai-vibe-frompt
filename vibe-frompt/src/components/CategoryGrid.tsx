@@ -133,7 +133,7 @@ export default function CategoryGrid({ selected, onSelect }: CategoryGridProps) 
                                     onSelect(cat.id);
                                     if (cat.id === 'landing-builder') {
                                         setTimeout(() => document.getElementById('landing-builder')?.scrollIntoView({ behavior: 'smooth' }), 100);
-                                    } else {
+                                    } else if (cat.id !== 'visual-inverse') {
                                         setTimeout(() => document.getElementById('form-section')?.scrollIntoView({ behavior: 'smooth' }), 100);
                                     }
                                 }}

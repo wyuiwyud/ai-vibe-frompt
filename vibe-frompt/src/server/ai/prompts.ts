@@ -27,19 +27,19 @@ export function buildRtcePrompt(input: ReaddyInput): ReaddyOutput {
   const sectionsLabel =
     layout.sections.length > 0
       ? layout.sections
-          .map((s) => s.type)
-          .filter((v, i, arr) => arr.indexOf(v) === i)
-          .join(', ')
+        .map((s) => s.type)
+        .filter((v, i, arr) => arr.indexOf(v) === i)
+        .join(', ')
       : 'hero, benefits, social proof, pricing, FAQ, final CTA';
 
   const layoutLabel =
     layout.layoutType === 'actionFirst'
       ? 'Action-first'
       : layout.layoutType === 'benefitFirst'
-      ? 'Benefit-first'
-      : layout.layoutType === 'storyFirst'
-      ? 'Story-first'
-      : 'Action-first';
+        ? 'Benefit-first'
+        : layout.layoutType === 'storyFirst'
+          ? 'Story-first'
+          : 'Action-first';
 
   const heroHeadline = layout.hero.headline || '[Headline chính 60px]';
 
@@ -97,7 +97,7 @@ ${refinement ? `[REFINEMENT]\nƯu tiên tinh chỉnh thêm theo yêu cầu: ${re
     : 6;
   const emotionalScore =
     strategy.style.toLowerCase().includes('holographic') ||
-    strategy.style.toLowerCase().includes('cyberpunk')
+      strategy.style.toLowerCase().includes('cyberpunk')
       ? 9
       : 7;
 

@@ -7,7 +7,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 async function analyzeWithGeminiVision(imageBase64: string, mimeType: string): Promise<Record<string, string> | null> {
     if (!GEMINI_API_KEY) return null;
 
-    const MODELS = ['gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+    // Try newest models first — gemini-2.0-flash is free tier and more reliable
+    const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
 
     const prompt = `You are an expert image analyst and AI prompt engineer. Analyze this image carefully and return ONLY a valid JSON object with exactly these 4 keys. Be very detailed and use professional photography/art terminology:
 
@@ -53,6 +54,62 @@ Return ONLY raw JSON. No markdown. No backticks. No explanation text. Just the J
     }
     return null;
 }
+
+// ─── Groq Vision Fallback (llama vision, works when Gemini quota is exceeded) ──
+async function analyzeWithGroqVision(imageBase64: string, mimeType: string): Promise<Record<string, string> | null> {
+    if (!GROQ_API_KEY) return null;
+
+    const dataUrl = `data:${mimeType};base64,${imageBase64}`;
+    const prompt = `You are an expert image analyst. Analyze this image and return ONLY a valid JSON object with exactly these 4 keys (no markdown, no backticks):
+
+{"subject":"...","environment":"...","cinematography":"...","style":"..."}
+
+Be detailed and use professional photography/cinematography terminology.`;
+
+    // Try current Groq vision models (2025)
+    const VISION_MODELS = ['llama-4-scout-17b-16e-instruct', 'llama-4-maverick-17b-128e-instruct', 'meta-llama/llama-4-scout-17b-16e-instruct'];
+
+    for (const model of VISION_MODELS) {
+        try {
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${GROQ_API_KEY}`,
+                },
+                body: JSON.stringify({
+                    model,
+                    messages: [{
+                        role: 'user',
+                        content: [
+                            { type: 'image_url', image_url: { url: dataUrl } },
+                            { type: 'text', text: prompt },
+                        ],
+                    }],
+                    temperature: 0.1,
+                    max_tokens: 900,
+                }),
+            });
+
+            if (!res.ok) {
+                const errBody = await res.text();
+                console.error(`[GroqVision] ${model} failed ${res.status}:`, errBody.slice(0, 200));
+                continue;
+            }
+
+            const data = await res.json();
+            const raw = (data?.choices?.[0]?.message?.content ?? '').trim();
+            if (raw.length > 10) {
+                console.log(`[GroqVision] ✅ ${model} OK (${raw.length} chars)`);
+                return parseComponents(raw);
+            }
+        } catch (e) {
+            console.error(`[GroqVision] ${model} exception:`, e);
+        }
+    }
+    return null;
+}
+
 
 // ─── Groq Text Fallback (user provides description, AI generates 4 cinematic layers) ──
 async function analyzeWithGroqText(description: string): Promise<Record<string, string> | null> {
@@ -164,7 +221,15 @@ export async function POST(req: NextRequest) {
             return Response.json({ components, mode: 'vision' }, { status: 200 });
         }
 
-        // Gemini Vision failed → tell client to switch to text mode
+        // Gemini failed → try Groq Vision (llama-3.2-90b-vision-preview)
+        console.log('[Vision] Gemini failed, trying Groq Vision...');
+        const groqComponents = await analyzeWithGroqVision(body.imageBase64, mimeType);
+
+        if (groqComponents && Object.values(groqComponents).some(v => v.length > 10)) {
+            return Response.json({ components: groqComponents, mode: 'vision' }, { status: 200 });
+        }
+
+        // Both vision AIs failed → tell client to switch to text mode
         return Response.json(
             {
                 error: 'vision_unavailable',

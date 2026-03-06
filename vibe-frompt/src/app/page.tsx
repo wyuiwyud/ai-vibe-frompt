@@ -13,9 +13,11 @@ import HowItWorks from '@/components/HowItWorks';
 import Testimonials from '@/components/Testimonials';
 import Footer from '@/components/Footer';
 import { LandingBuilderWizard } from '@/features/landing-builder/LandingBuilderWizard';
+import WritingWizard from '@/features/writing-wizard/WritingWizard';
 import { buildPrompt, calculateScore, type FormData, type Category } from '@/lib/promptTemplates';
+import { useLandingBuilderStore } from '@/store/landingBuilderStore';
 
-const PROMPT_CATEGORIES: Category[] = ['writing', 'coding', 'image'];
+const PROMPT_CATEGORIES: Category[] = ['coding', 'image'];
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('writing');
@@ -94,10 +96,25 @@ export default function Home() {
 
         <CategoryGrid
           selected={selectedCategory}
-          onSelect={(id) => setSelectedCategory(id)}
+          onSelect={setSelectedCategory}
         />
 
-        {/* Prompt Form */}
+        {/* Writing Wizard — replaces DynamicForm for 'writing' category */}
+        <AnimatePresence>
+          {selectedCategory === 'writing' && (
+            <motion.div
+              key="writing-wizard"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <WritingWizard />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Prompt Form — for coding & image */}
         {PROMPT_CATEGORIES.includes(selectedCategory as Category) && (
           <DynamicForm
             category={selectedCategory as Category}
@@ -122,9 +139,20 @@ export default function Home() {
         </AnimatePresence>
 
         {/* Landing Builder */}
-        <div id="landing-builder">
-          <LandingBuilderWizard />
-        </div>
+        <AnimatePresence>
+          {selectedCategory === 'landing-builder' && (
+            <motion.div
+              id="landing-builder"
+              key="landing-builder"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <LandingBuilderWizard />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Building overlay */}
         <AnimatePresence>
