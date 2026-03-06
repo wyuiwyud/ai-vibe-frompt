@@ -5,23 +5,23 @@ import { motion } from 'framer-motion';
 const TESTIMONIALS = [
     {
         name: 'Phương Linh', role: 'Content Creator · HCM', avatar: '👩‍💻',
-        text: 'Trước đây mình mất 20 phút để viết 1 cái prompt cho ChatGPT. Giờ dùng VIBE Frompt chỉ cần 30 giây, output cũng tốt hơn hẳn!',
-        score: 5, tag: 'Viết Lách',
+        text: 'Từ trước mình mất 20 phút viết 1 prompt cho ChatGPT. Giờ dùng VIBE chỉ 30 giây, output còn tốt hơn hẳn. Nhất là Quality Score giúp mình biết prompt đã chuẩn hay không.',
+        score: 5, tag: 'Prompt Builder',
     },
     {
-        name: 'Minh Khoa', role: 'Full-stack Developer · Hà Nội', avatar: '👨‍💻',
-        text: 'Tôi hay dùng cho coding prompts. Nó tự thêm context về architecture pattern, error handling – những thứ tôi hay quên mention.',
-        score: 5, tag: 'Lập Trình',
+        name: 'Minh Khoa', role: 'UI/UX Designer · Hà Nội', avatar: '👨‍💻',
+        text: 'Visual Inverse Engine cứu chanh đời tôi. Upload ảnh cũ, AI phân tích xong output prompt chi tiết để tạo ảnh tương tự hay nâng cấp. Tiết kiệm hàng giờ styling.',
+        score: 5, tag: 'Visual Inverse',
     },
     {
-        name: 'Thanh Trúc', role: 'Marketing Manager', avatar: '👩‍🎨',
-        text: 'Phần Prompt Score Meter rất hay – nó giúp mình biết prompt đã đủ cụ thể chưa trước khi paste vào AI. Game changer!',
-        score: 5, tag: 'Viết Lách',
+        name: 'Thanh Trúc', role: 'AI Prompt Specialist', avatar: '👩‍🎨',
+        text: 'Prompt Quality Score như có mentor review từng cái. Biết ngay cần cải thiện ở đâu: structure? creativity? clarity? Tất cả trong 1 điểm.',
+        score: 5, tag: 'Score Meter',
     },
     {
-        name: 'Đức Anh', role: 'Data Analyst · Đà Nẵng', avatar: '📊',
-        text: 'Dùng cho data analysis prompt. Template xử lý dữ liệu rất chuẩn, tự thêm yêu cầu về output format và visualization.',
-        score: 5, tag: 'Xử Lý Dữ Liệu',
+        name: 'Đức Anh', role: 'Startup Founder · HCM', avatar: '📊',
+        text: 'Landing Builder giúp mình setup landing page từ ý tưởng thô trong 1 tiếng. Trước đó lấy 1 tuần. Wizard 5 bước guide rất logic: strategy → layout → optimize → finalize → prompt.',
+        score: 5, tag: 'Landing Builder',
     },
 ];
 
@@ -34,9 +34,9 @@ export default function Testimonials() {
                 <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ textAlign: 'center', marginBottom: 52 }}>
                     <div className="badge badge-cyan" style={{ marginBottom: 16 }}>Người Dùng Nói Gì</div>
                     <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 38px)', fontWeight: 800, marginBottom: 12 }}>
-                        <span className="text-gradient">10.000+ Người Việt</span> Đã Vibe
+                        Users Yêu Thích <span className="text-gradient">VIBE Frompt</span>
                     </h2>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16 }}>Từ sinh viên đến marketer, developer đến data analyst</p>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16 }}>Từ content creator, designer, developer, đến startup founder</p>
                 </motion.div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>

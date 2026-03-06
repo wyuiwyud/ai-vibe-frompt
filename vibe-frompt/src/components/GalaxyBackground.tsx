@@ -43,6 +43,7 @@ const GalaxyBackground: React.FC = () => {
             />
 
             {/* Stars */}
+            <div suppressHydrationWarning>
             {isMounted && stars.map((star) => (
                 <div
                     key={star.id}
@@ -57,6 +58,7 @@ const GalaxyBackground: React.FC = () => {
                     }}
                 />
             ))}
+            </div>
 
             <style>{`
         @keyframes twinkle {

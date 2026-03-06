@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface Components {
     subject: string;
     environment: string;
+    layout: string;
+    text: string;
     cinematography: string;
     style: string;
 }
@@ -13,15 +15,19 @@ interface Components {
 const DEFAULT_COMPONENTS: Components = {
     subject: '',
     environment: '',
+    layout: '',
+    text: '',
     cinematography: '',
     style: '',
 };
 
 const COMPONENT_META: { key: keyof Components; label: string; icon: string; color: string; hint: string }[] = [
-    { key: 'subject', label: 'Subject (Chủ thể)', icon: '👤', color: '#00f5ff', hint: 'Nhân vật chính, dáng pose, trang phục, cảm xúc' },
-    { key: 'environment', label: 'Environment (Bối cảnh)', icon: '🌍', color: '#7b2fff', hint: 'Địa điểm, không gian, bầu khí quyển, độ sâu' },
-    { key: 'cinematography', label: 'Cinematography (Kỹ thuật)', icon: '🎬', color: '#ff6633', hint: 'Góc máy, tiêu cự, DOF, ánh sáng' },
-    { key: 'style', label: 'Artistic Style (Phong cách)', icon: '🎨', color: '#ff00cc', hint: 'Bảng màu, texture, tone màu, phong cách nghệ thuật' },
+    { key: 'subject', label: 'Chủ thể', icon: '👤', color: '#00f5ff', hint: 'Nhân vật chính, dáng pose, trang phục, cảm xúc...' },
+    { key: 'environment', label: 'Bối cảnh', icon: '🌍', color: '#7b2fff', hint: 'Địa điểm, ánh sáng nền, bầu không khí, độ sâu...' },
+    { key: 'layout', label: 'Bố cục & Sắp xếp', icon: '📐', color: '#33ffaa', hint: 'Quy tắc 1/3, vị trí chính phụ, sự cân bằng khối...' },
+    { key: 'text', label: 'Văn bản & Thông tin', icon: '📝', color: '#ffff33', hint: 'Slogan, logo, văn hiệu, các chi tiết ký tự...' },
+    { key: 'cinematography', label: 'Ống kính & Ánh sáng', icon: '🎬', color: '#ff6633', hint: 'Góc máy, tiêu cự, ánh sáng kỹ thuật, DOF...' },
+    { key: 'style', label: 'Phong cách & Màu sắc', icon: '🎨', color: '#ff00cc', hint: 'Bảng màu, chất liệu, tone màu, phong cách họa sĩ...' },
 ];
 
 type Variant = 'original' | 'galaxy4d' | 'cinematic';
@@ -29,88 +35,99 @@ type Variant = 'original' | 'galaxy4d' | 'cinematic';
 function buildPrompt(components: Components, variant: Variant): string {
     const s = components.subject;
     const e = components.environment;
+    const l = components.layout;
+    const t = components.text;
     const c = components.cinematography;
     const st = components.style;
 
     if (variant === 'original') {
-        return `[ROLE]
-Bạn là AI Image Generation Expert chuyên tái tạo hình ảnh với độ tương đồng 99%.
+        return `[VAI TRÒ]
+Bạn là chuyên gia về AI Image Generation, chuyên tái tạo hình ảnh với độ tương đồng 99%.
 
-[TASK]
+[NHIỆM VỤ]
 Tạo hình ảnh theo đúng mô tả sau, tái tạo chính xác "linh hồn" của ảnh gốc.
 
-[CONTEXT — SUBJECT]
+[BỐI CẢNH — CHỦ THỂ]
 ${s}
 
-[CONTEXT — ENVIRONMENT]
+[BỐI CẢNH — KHÔNG GIAN]
 ${e}
 
-[CONTEXT — CINEMATOGRAPHY]
+[BỐI CẢNH — BỐ CỤC]
+${l}
+
+[BỐI CẢNH — VĂN BẢN]
+${t}
+
+[BỐI CẢNH — KỸ THUẬT]
 ${c}
 
-[CONTEXT — ARTISTIC STYLE]
+[BỐI CẢNH — PHONG CÁCH]
 ${st}
 
-[EXAMPLE]
+[VÍ DỤ]
 Ultra-detailed, professional quality, masterpiece.
 
-[INSTRUCTION]
-Recreate with maximum fidelity. Preserve all visual elements, lighting, and atmosphere. --ar 16:9 --v 6 --style raw --stylize 150
+[CHỈ DẪN]
+Tái tạo với độ trung thực tối đa. Giữ trọn vẹn các yếu tố thị giác, ánh sáng và bầu không khí. --ar 16:9 --v 6 --style raw --stylize 150
 
-Negative: blurry, low quality, watermark, distorted, text`.trim();
+[LOẠI BỎ]
+blurry, low quality, watermark, distorted, text`.trim();
     }
 
     if (variant === 'galaxy4d') {
-        return `[ROLE]
-Bạn là AI Image Artist chuyên phong cách Galaxy 4D/Cosmic Cinematic.
+        return `[VAI TRÒ]
+Bạn là AI Image Artist chuyên phong cách Galaxy 4D/Cosmic Cinematic của VIBE Frompt.
 
-[TASK]
-Tái tạo hình ảnh với phong cách Galaxy 4D đặc trưng của VIBE Frompt:
+[NHIỆM VỤ]
+Tái tạo hình ảnh với phong cách Galaxy 4D đặc trưng:
 - Nền vũ trụ sâu thẳm với Nebula Purple (#7b2fff) và Stardust Cyan (#00f5ff)
 - Ánh sáng huyền bí từ sao và thiên thể
 - Hiệu ứng bokeh hạt sao lấp lánh
 
-[CONTEXT — SUBJECT]
+[BỐI CẢNH — CHỦ THỂ]
 ${s}
 
-[CONTEXT — ENVIRONMENT]
+[BỐI CẢNH — KHÔNG GIAN]
 ${e}, dưới đây là bầu trời thiên hà Nebula Purple, ánh sáng Stardust Cyan tỏa ra xung quanh, bokeh sao lấp lánh
 
-[CONTEXT — CINEMATOGRAPHY]
+[BỐI CẢNH — KỸ THUẬT]
 ${c}, volumetric nebula lighting, anamorphic lens flare
 
-[CONTEXT — ARTISTIC STYLE]
+[BỐI CẢNH — PHONG CÁCH]
 Galaxy 4D aesthetic, ${st}, cosmic color grading with deep purple and cyan tones, Nebula Glow overlay
 
-[INSTRUCTION]
-Apply Galaxy 4D VIBE Frompt signature style. Add nebula particles, galactic bokeh, cosmic rim lighting. --ar 16:9 --v 6 --style raw --stylize 200
+[CHỈ DẪN]
+Áp dụng phong cách Galaxy 4D độc bản của VIBE Frompt. Thêm các hạt tinh vân, bokeh vũ trụ và ánh sáng viền huyền ảo. --ar 16:9 --v 6 --style raw --stylize 200
 
-Negative: bland colors, no glow, overexposed, washed out`.trim();
+[LOẠI BỎ]
+bland colors, no glow, overexposed, washed out`.trim();
     }
 
     // cinematic epic
-    return `[ROLE]
+    return `[VAI TRÒ]
 Bạn là Cinematographer AI siêu cấp, chuyên gia về hình ảnh điện ảnh Hollywood AAA.
 
-[TASK]
-Nâng cấp hình ảnh lên cấp độ EPIC CINEMATIC — hoành tráng, đột phá thị giác, như cảnh phim bom tấn.
+[NHIỆM VỤ]
+Nâng cấp hình ảnh lên cấp độ EPIC CINEMATIC — hoành tráng, đột phá thị giác, như cảnh phim bom tấn Hollywood.
 
-[CONTEXT — SUBJECT]
-${s}, enhanced with dynamic pose, powerful presence, hero lighting
+[BỐI CẢNH — CHỦ THỂ]
+${s}, được tăng cường với tư thế động, sự hiện diện mạnh mẽ, hero lighting
 
-[CONTEXT — ENVIRONMENT]
-${e}, expanded to epic scale, dramatic weather effects (lightning/storm/fire), god rays, cinematic depth
+[BỐI CẢNH — KHÔNG GIAN]
+${e}, mở rộng quy mô hoành tráng, hiệu ứng thời tiết kịch tính (sét/bão/lửa), god rays, độ sâu điện ảnh
 
-[CONTEXT — CINEMATOGRAPHY]
-${c}, upgraded to: extreme dramatic angle, anamorphic widescreen, high contrast dramatic lighting, Dolby Vision HDR color
+[BỐI CẢNH — KỸ THUẬT]
+${c}, góc máy kịch tính cực độ, anamorphic widescreen, ánh sáng tương phản cao, Dolby Vision HDR
 
-[CONTEXT — ARTISTIC STYLE]
+[BỐI CẢNH — PHONG CÁCH]
 Epic cinematic, ${st}, Hollywood grade color grading, lens flares, volumetric fog, cinematic bloom, IMAX quality
 
-[INSTRUCTION]
-Make it EPIC. Maximum drama, maximum visual impact, AAA movie quality. --ar 21:9 --v 6 --style cinematic --stylize 250
+[CHỈ DẪN]
+Làm cho nó trở nên hoành tráng (EPIC). Tối đa tính kịch tính, tác động thị giác mạnh mẽ, chất lượng phim AAA. --ar 21:9 --v 6 --style cinematic --stylize 250
 
-Negative: boring, flat lighting, ordinary, amateur, low contrast`.trim();
+[LOẠI BỎ]
+boring, flat lighting, ordinary, amateur, low contrast`.trim();
 }
 
 interface EditableCardProps {
@@ -129,7 +146,7 @@ function EditableCard({ meta, value, onChange, loading }: EditableCardProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             style={{
-                background: focused ? `rgba(${meta.color === '#00f5ff' ? '0,245,255' : meta.color === '#7b2fff' ? '123,47,255' : meta.color === '#ff6633' ? '255,102,51' : '255,0,204'},0.06)` : 'rgba(255,255,255,0.03)',
+                background: focused ? `${meta.color}11` : 'rgba(255,255,255,0.03)',
                 border: `1px solid ${focused ? meta.color + '66' : 'rgba(255,255,255,0.08)'}`,
                 borderRadius: 16,
                 padding: '18px',
@@ -161,9 +178,9 @@ function EditableCard({ meta, value, onChange, loading }: EditableCardProps) {
 }
 
 const VARIANT_TABS: { id: Variant; label: string; icon: string; color: string }[] = [
-    { id: 'original', label: 'Original', icon: '⚡', color: '#00f5ff' },
+    { id: 'original', label: 'Nguyên bản', icon: '⚡', color: '#00f5ff' },
     { id: 'galaxy4d', label: 'Galaxy 4D', icon: '🌌', color: '#7b2fff' },
-    { id: 'cinematic', label: 'Cinematic Epic', icon: '🎬', color: '#ff6633' },
+    { id: 'cinematic', label: 'Điện ảnh (Epic)', icon: '🎬', color: '#ff6633' },
 ];
 
 export default function VisualInverseEngine() {
@@ -174,6 +191,9 @@ export default function VisualInverseEngine() {
     const [components, setComponents] = useState<Components>(DEFAULT_COMPONENTS);
     const [analyzing, setAnalyzing] = useState(false);
     const [analyzed, setAnalyzed] = useState(false);
+    const [generatingPrompt, setGeneratingPrompt] = useState(false);
+    const [showPrompt, setShowPrompt] = useState(false);
+    const [generatedPrompts, setGeneratedPrompts] = useState<{ master: string; galaxy4d: string; cinematic: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [activeVariant, setActiveVariant] = useState<Variant>('original');
     const [copied, setCopied] = useState(false);
@@ -201,13 +221,17 @@ export default function VisualInverseEngine() {
                 const canvas = document.createElement('canvas');
                 canvas.width = w;
                 canvas.height = h;
-                canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
-                const compressed = canvas.toDataURL('image/jpeg', 0.65);
-                setImageBase64(compressed.split(',')[1]);
-                setMimeType('image/jpeg');
-                setComponents(DEFAULT_COMPONENTS);
-                setAnalyzed(false);
-                setError(null);
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const compressed = canvas.toDataURL('image/jpeg', 0.65);
+                    setImageBase64(compressed.split(',')[1]);
+                    setMimeType('image/jpeg');
+                    setComponents(DEFAULT_COMPONENTS);
+                    setAnalyzed(false);
+                    setShowPrompt(false);
+                    setError(null);
+                }
             };
             img.src = originalDataUrl;
         };
@@ -278,7 +302,37 @@ export default function VisualInverseEngine() {
         }
     };
 
-    const prompt = analyzed ? buildPrompt(components, activeVariant) : '';
+    const handleGeneratePrompt = async () => {
+        if (!imageBase64 || !analyzed) return;
+        setGeneratingPrompt(true);
+        setError(null);
+        console.log('[Vision] Phase 2: Starting Deep Synthesis (6 layers)...');
+        try {
+            const res = await fetch('/api/vision', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'generate_final',
+                    imageBase64,
+                    mimeType,
+                    components,
+                }),
+            });
+            const data = await res.json() as { prompts?: { master: string; galaxy4d: string; cinematic: string }; error?: string };
+            if (!res.ok || !data.prompts) throw new Error(data.error || 'Lỗi khi tạo prompt cuối.');
+
+            setGeneratedPrompts(data.prompts);
+            setShowPrompt(true);
+        } catch (e) {
+            setError((e as Error).message);
+        } finally {
+            setGeneratingPrompt(false);
+        }
+    };
+
+    const prompt = (showPrompt && generatedPrompts)
+        ? (activeVariant === 'galaxy4d' ? generatedPrompts.galaxy4d : activeVariant === 'cinematic' ? generatedPrompts.cinematic : generatedPrompts.master)
+        : '';
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(prompt);
@@ -324,7 +378,7 @@ export default function VisualInverseEngine() {
                             ) : (
                                 <div>
                                     <div style={{ fontSize: 40, marginBottom: 12 }}>🖼️</div>
-                                    <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 6 }}>Upload hoặc Drag & Drop</div>
+                                    <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 6 }}>Tải ảnh lên hoặc Kéo thả vào đây</div>
                                     <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>JPG, PNG, WEBP · Tối đa 10MB</div>
                                 </div>
                             )}
@@ -354,7 +408,7 @@ export default function VisualInverseEngine() {
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                                 style={{ padding: '14px 16px', background: 'rgba(255,153,0,0.06)', border: '1px solid rgba(255,153,0,0.25)', borderRadius: 14 }}
                             >
-                                <div style={{ fontSize: 12, color: '#ff9900', fontWeight: 700, marginBottom: 8 }}>✍️ Mô tả AI Vision (trong khi chờ quota reset)</div>
+                                <div style={{ fontSize: 12, color: '#ff9900', fontWeight: 700, marginBottom: 8 }}>✍️ Mô tả Ảnh (AI Vision đang bận)</div>
                                 <textarea
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
@@ -366,38 +420,80 @@ export default function VisualInverseEngine() {
                                         lineHeight: 1.5, resize: 'vertical', outline: 'none', fontFamily: 'inherit',
                                     }}
                                 />
-                                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 6 }}>Groq Llama 3.3 sẽ sinh 4 lớp phân tích từ mô tả này</div>
+                                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 6 }}>Groq sẽ sinh 4 lớp phân tích từ mô tả này</div>
                             </motion.div>
                         )}
 
                         {/* Error */}
                         {error && (
-                            <div style={{ padding: '12px 16px', background: 'rgba(255,153,0,0.08)', border: '1px solid rgba(255,153,0,0.25)', borderRadius: 12, fontSize: 13, color: '#ff9900' }}>
-                                {error}
+                            <div style={{ padding: '12px 16px', background: 'rgba(255,102,51,0.08)', border: '1px solid rgba(255,102,51,0.25)', borderRadius: 12, fontSize: 13, color: '#ff6633' }}>
+                                ⚠️ {error}
                             </div>
                         )}
 
                         {/* Tip */}
                         {!imagePreview && (
                             <div style={{ padding: '14px 16px', background: 'rgba(0,245,255,0.04)', border: '1px solid rgba(0,245,255,0.12)', borderRadius: 12, fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
-                                💡 <strong style={{ color: '#00f5ff' }}>Cách dùng:</strong> Upload ảnh mẫu bạn thích → AI tự động bóc tách thành 4 lớp → Chỉnh sửa từng lớp → Tạo prompt để sinh ảnh mới tương tự 99%
+                                💡 <strong style={{ color: '#00f5ff' }}>Cách dùng:</strong> Tải ảnh mẫu → AI bóc tách <strong style={{ color: '#fff' }}>6 lớp chuyên sâu</strong> (Chủ thể, Bối cảnh, Bố cục, Văn bản, Kỹ thuật, Style) → Chỉnh sửa → AI tổng hợp thành Master Prompt siêu chi tiết.
                             </div>
                         )}
                     </div>
 
-                    {/* RIGHT: 4 Editable Cards (shown after analysis) */}
                     <AnimatePresence>
                         {analyzed && (
-                            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} style={{ display: 'grid', gap: 12 }}>
+                            <motion.div
+                                initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                                    gap: 16,
+                                    marginTop: 20
+                                }}
+                            >
                                 {COMPONENT_META.map((meta) => (
                                     <EditableCard
                                         key={meta.key}
                                         meta={meta}
                                         value={components[meta.key]}
-                                        onChange={(v) => setComponents(prev => ({ ...prev, [meta.key]: v }))}
+                                        onChange={(v) => {
+                                            setComponents(prev => ({ ...prev, [meta.key]: v }));
+                                            setShowPrompt(false); // Reset prompt if user edits
+                                        }}
                                         loading={analyzing}
                                     />
                                 ))}
+
+                                {/* Toggle Prompt Button */}
+                                <motion.button
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    whileHover={{ scale: (analyzing || generatingPrompt) ? 1 : 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={handleGeneratePrompt}
+                                    disabled={analyzing || generatingPrompt}
+                                    className="btn-magnetic"
+                                    style={{
+                                        width: '100%',
+                                        marginTop: 8,
+                                        padding: '16px',
+                                        fontSize: 16,
+                                        background: 'linear-gradient(135deg, #00f5ff 0%, #7b2fff 100%)',
+                                        color: '#000',
+                                        fontWeight: 800,
+                                        boxShadow: '0 0 20px rgba(0, 245, 255, 0.3)',
+                                        opacity: (analyzing || generatingPrompt) ? 0.7 : 1,
+                                        cursor: (analyzing || generatingPrompt) ? 'wait' : 'pointer'
+                                    }}
+                                >
+                                    {generatingPrompt ? (
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
+                                            <span style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,0.3)', borderTop: '2px solid #000', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
+                                            AI đang tạo Master Prompt chuyên sâu...
+                                        </span>
+                                    ) : (
+                                        '🚀 Tạo Master Prompt Chuyên Sâu'
+                                    )}
+                                </motion.button>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -405,7 +501,7 @@ export default function VisualInverseEngine() {
 
                 {/* Output Section */}
                 <AnimatePresence>
-                    {analyzed && (
+                    {showPrompt && (
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -440,7 +536,7 @@ export default function VisualInverseEngine() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
                                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{prompt.length} ký tự</span>
                                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
-                                    {activeVariant === 'galaxy4d' ? '🌌 VIBE Galaxy 4D' : activeVariant === 'cinematic' ? '🎬 Cinematic Epic' : '⚡ Original'}
+                                    {activeVariant === 'galaxy4d' ? '🌌 VIBE Galaxy 4D' : activeVariant === 'cinematic' ? '🎬 Điện ảnh Epic' : '⚡ Nguyên bản'}
                                 </span>
                             </div>
 
@@ -451,21 +547,27 @@ export default function VisualInverseEngine() {
                                     className="btn-magnetic"
                                     style={{ flex: 1, padding: '14px', fontSize: 15 }}
                                 >
-                                    {copied ? '✅ Đã Copy!' : '📋 Copy Stellar Prompt'}
+                                    {copied ? '✅ Đã Sao chép!' : '📋 Sao chép Prompt'}
                                 </button>
                                 <button
-                                    onClick={() => { setImagePreview(null); setImageBase64(null); setAnalyzed(false); setComponents(DEFAULT_COMPONENTS); }}
+                                    onClick={() => {
+                                        setImagePreview(null);
+                                        setImageBase64(null);
+                                        setAnalyzed(false);
+                                        setShowPrompt(false);
+                                        setComponents(DEFAULT_COMPONENTS);
+                                    }}
                                     className="btn-ghost"
                                     style={{ padding: '14px 20px', fontSize: 14 }}
                                 >
-                                    🔄 Upload ảnh mới
+                                    🔄 Làm mới
                                 </button>
                             </div>
 
                             {/* Info */}
                             <div style={{ marginTop: 12, padding: '12px 16px', background: 'rgba(123,47,255,0.07)', border: '1px solid rgba(123,47,255,0.2)', borderRadius: 12, fontSize: 12, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
                                 🌌 <strong style={{ color: '#7b2fff' }}>Stellar Prompt</strong> đã được tối ưu cho Midjourney v6, DALL-E 3, và Stable Diffusion XL.
-                                Chỉnh sửa từng thẻ ở trên để tinh chỉnh kết quả trước khi copy.
+                                Bạn có thể chỉnh sửa các lớp phân tích ở trên để tinh chỉnh kết quả trước khi sao chép.
                             </div>
                         </motion.div>
                     )}

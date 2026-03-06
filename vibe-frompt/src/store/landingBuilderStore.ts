@@ -1,68 +1,21 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type LayoutType = 'actionFirst' | 'benefitFirst' | 'storyFirst' | null;
+import type {
+  LayoutType,
+  DeviceMode,
+  HeroConfig,
+  SectionType,
+  LandingSection,
+  TypographyConfig,
+  VisualConfig,
+  StrategyState,
+  LayoutState,
+  AIDirection,
+  ChatMessage
+} from '@/features/landing-builder/types';
 
-export type DeviceMode = 'desktop' | 'tablet' | 'mobile';
-
-export interface HeroConfig {
-  headline: string;
-  subheadline: string;
-  ctaText: string;
-  ctaColor: string;
-  animation: 'fade' | 'slide' | 'scale';
-  backgroundStyle: 'gradient' | 'blurOrbs' | 'particles';
-}
-
-export type SectionType =
-  | 'hero'
-  | 'benefits'
-  | 'features'
-  | 'testimonials'
-  | 'pricing'
-  | 'faq'
-  | 'ctaFinal';
-
-export interface LandingSection {
-  id: string;
-  type: SectionType;
-  settings: Record<string, unknown>;
-}
-
-export interface TypographyConfig {
-  font: 'Inter' | 'Poppins' | 'Space Grotesk' | 'Manrope';
-  headlineSizePx: number;
-  bodySizePx: number;
-  spacingBase: 4 | 8 | 12 | 16;
-  buttonShape: 'rounded' | 'full' | 'pill';
-  buttonSize: 'sm' | 'md' | 'lg';
-}
-
-export interface VisualConfig {
-  hoverEffect: 'tilt3d' | 'scale' | 'glow' | 'lift';
-  microAnimations: boolean;
-  particlesIntensity: number; // 0–100
-  blurOrbs: boolean;
-}
-
-export interface StrategyState {
-  brandName: string;
-  primaryColor: string;
-  productType: string;
-  goals: string[];
-  targetAudience: string[];
-  style: string;
-}
-
-export interface LayoutState {
-  layoutType: LayoutType;
-  sections: LandingSection[];
-  hero: HeroConfig;
-  typography: TypographyConfig;
-  visuals: VisualConfig;
-  deviceMode: DeviceMode;
-  conversionScore?: number;
-}
+export type { LayoutType, DeviceMode, SectionType, LandingSection, AIDirection, ChatMessage };
 
 export interface LandingBuilderState {
   currentStep: 1 | 2 | 3 | 4 | 5;
@@ -70,12 +23,18 @@ export interface LandingBuilderState {
   layout: LayoutState;
   finalPrompt: string | null;
   isGenerating: boolean;
+  aiDirections: AIDirection[] | null;
+  chatHistory: ChatMessage[];
+  selectedDirectionId: number | null;
 
   setStep: (step: LandingBuilderState['currentStep']) => void;
   updateStrategy: (partial: Partial<StrategyState>) => void;
   updateLayout: (partial: Partial<LayoutState>) => void;
   setFinalPrompt: (prompt: string | null) => void;
   setIsGenerating: (v: boolean) => void;
+  setAIDirections: (directions: AIDirection[] | null) => void;
+  addChatMessage: (msg: ChatMessage) => void;
+  setSelectedDirection: (id: number | null) => void;
   reset: () => void;
 }
 
@@ -124,6 +83,9 @@ export const useLandingBuilderStore = create<LandingBuilderState>()(
       layout: defaultLayout,
       finalPrompt: null,
       isGenerating: false,
+      aiDirections: null,
+      chatHistory: [],
+      selectedDirectionId: null,
 
       setStep: (step) => set({ currentStep: step }),
       updateStrategy: (partial) =>
@@ -136,6 +98,9 @@ export const useLandingBuilderStore = create<LandingBuilderState>()(
         })),
       setFinalPrompt: (prompt) => set({ finalPrompt: prompt }),
       setIsGenerating: (v) => set({ isGenerating: v }),
+      setAIDirections: (dirs) => set({ aiDirections: dirs }),
+      addChatMessage: (msg) => set((s) => ({ chatHistory: [...s.chatHistory, msg] })),
+      setSelectedDirection: (id) => set({ selectedDirectionId: id }),
       reset: () =>
         set({
           currentStep: 1,
@@ -143,6 +108,9 @@ export const useLandingBuilderStore = create<LandingBuilderState>()(
           layout: defaultLayout,
           finalPrompt: null,
           isGenerating: false,
+          aiDirections: null,
+          chatHistory: [],
+          selectedDirectionId: null,
         }),
     }),
     {

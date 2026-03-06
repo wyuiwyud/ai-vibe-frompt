@@ -3,10 +3,10 @@
 import { motion } from 'framer-motion';
 
 const STEPS = [
-    { num: '01', icon: '🧭', title: 'Chọn Category', desc: 'Viết lách, lập trình, tạo ảnh hay phân tích dữ liệu – chọn đúng để form được tối ưu.', color: '#00f5ff' },
-    { num: '02', icon: '⚙️', title: 'Điền Form Thông Minh', desc: 'Chỉ 4–8 fields. AI context engine tự hiểu ý định của bạn và điều chỉnh cấu trúc.', color: '#7b2fff' },
-    { num: '03', icon: '⚡', title: 'Build Prompt', desc: 'One click. 1.2 giây. Prompt 200–300 từ được tối ưu hoàn toàn, sẵn sàng dùng ngay.', color: '#ff00cc' },
-    { num: '04', icon: '🚀', title: 'Copy & Vibe', desc: 'Copy vào ChatGPT, Claude, Gemini – nhận output chất lượng ngay lần đầu tiên.', color: '#00ffaa' },
+    { num: '01', icon: '🧭', title: 'Chọn Công Cụ', desc: 'Chọn Prompt Builder, Visual Inverse, hay Landing Builder tùy theo nhu cầu của bạn.', color: '#00f5ff' },
+    { num: '02', icon: '⚙️', title: 'Nhập Thông Tin', desc: 'Điền form đơn giản (4-8 fields), upload ảnh, hay mô tả ý tưởng landing page.', color: '#7b2fff' },
+    { num: '03', icon: '⚡', title: 'AI Xử Lý', desc: 'AI tự động tối ưu content, phân tích ảnh, hoặc xây dựng từng bước landing page.', color: '#ff00cc' },
+    { num: '04', icon: '🚀', title: 'Copy & Deploy', desc: 'Copy prompt vào AI, download landing page, hoặc sử dụng ngay – chức năng gì cũng có.', color: '#00ffaa' },
 ];
 
 export default function HowItWorks() {
