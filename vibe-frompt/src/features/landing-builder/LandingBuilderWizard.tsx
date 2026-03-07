@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLandingBuilderStore } from '@/store/landingBuilderStore';
 import { StrategyStep } from './steps/StrategyStep';
@@ -23,6 +23,13 @@ export function LandingBuilderWizard() {
   const currentStep = useLandingBuilderStore((s) => s.currentStep);
   const setStep = useLandingBuilderStore((s) => s.setStep);
   const [reverseOpen, setReverseOpen] = useState(false);
+
+  // Rehydrate the store from localStorage on client mount.
+  // This pairs with `skipHydration: true` in the persist config,
+  // which prevents SSR from reading localStorage (avoids hydration mismatch).
+  useEffect(() => {
+    useLandingBuilderStore.persist.rehydrate();
+  }, []);
 
   const renderStep = () => {
     switch (currentStep) {

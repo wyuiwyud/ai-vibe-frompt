@@ -115,6 +115,7 @@ export const useLandingBuilderStore = create<LandingBuilderState>()(
     }),
     {
       name: 'landing-builder-store',
+      skipHydration: true,
     }
   )
 );
